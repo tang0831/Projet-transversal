@@ -1,16 +1,16 @@
 from datetime import datetime
-from src.models.acte import Acte
-from src.models.citoyen import Citoyen
-from src.models.localite import Localite
-from src.models.systeme_log import SystemeLog
-from src.models.utilisateur import Utilisateur
+from backend.models.acte import Acte
+from backend.models.citoyen import Citoyen
+from backend.models.localite import Localite
+from backend.models.systeme_log import SystemeLog
+from backend.models.utilisateur import Utilisateur
 
 def tester_systeme():
     print("🚀 === DÉBUT DES TESTS DU SYSTÈME (VISION 2035) ===\n")
 
     try:
         # 1. Test LOCALITE
-        print("📍 --- Test Localite ---")
+        print("--- Test Localite ---")
         loc = Localite() # Marche maintenant car on a mis =None dans __init__
         loc.ajouter_localite("Antananarivo", "Tana Ville", "Analamanga", 101)
         # On essaie de récupérer la localité avec l'ID 1

@@ -14,7 +14,6 @@ class ConnexionBase:
     def connect(self):
         if not self.conn or not self.conn.is_connected():
             self.conn = mysql.connector.connect(**self.config)
-            print(" Connexion réussie !")
 
     def execute_query(self, query, values=None):
         self.connect()
