@@ -12,6 +12,7 @@ class Citoyen:
         est_vivant=True,
         sexe=None,
         numero_cin=None,
+        id_localite=None,
     ):
         self.nom = nom
         self.prenom = prenom
@@ -20,16 +21,25 @@ class Citoyen:
         self.est_vivant = est_vivant
         self.sexe = sexe
         self.numero_cin = numero_cin
+        self.id_localite = id_localite
         self.conn = ConnexionBase()
         self.conn.connect()
 
     def ajouter_citoyen(
-        self, nom, prenom, date_naissance, lieu_naissance, est_vivant, sexe, numero_cin
+        self,
+        nom,
+        prenom,
+        date_naissance,
+        lieu_naissance,
+        est_vivant,
+        sexe,
+        numero_cin,
+        id_localite=None,
     ):
         try:
             # 2. Remplacement des '?' par '%s' pour MySQL
-            query = """INSERT INTO Citoyen (nom, prenom, date_naissance, lieu_naissance, est_vivant, sexe, numero_cin)
-                       VALUES (%s, %s, %s, %s, %s, %s, %s)"""
+            query = """INSERT INTO Citoyen (nom, prenom, date_naissance, lieu_naissance, est_vivant, sexe, numero_cin, id_localite)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
             values = (
                 nom,
                 prenom,
@@ -38,6 +48,7 @@ class Citoyen:
                 est_vivant,
                 sexe,
                 numero_cin,
+                id_localite,
             )
 
             self.conn.execute_query(query, values)
@@ -45,6 +56,18 @@ class Citoyen:
 
         except Exception as e:
             print(f"Erreur lors de l'ajout du citoyen ❌ : {e}")
+
+    def lister_par_region(self, region):
+        try:
+            query = """
+                SELECT c.* FROM Citoyen c
+                JOIN localite l ON c.id_localite = l.id_localite
+                WHERE l.region = %s
+            """
+            return self.conn.execute_query(query, (region,))
+        except Exception as e:
+            print(f"❌ Erreur lors de la récupération des citoyens par région : {e}")
+            return []
 
     def modifier_citoyen(
         self,
@@ -56,11 +79,12 @@ class Citoyen:
         est_vivant,
         sexe,
         numero_cin,
+        id_localite=None,
     ):
         try:
             # 2. Remplacement des '?' par '%s'
             query = """UPDATE Citoyen SET nom=%s, prenom=%s, date_naissance=%s, lieu_naissance=%s,
-                       est_vivant=%s, sexe=%s, numero_cin=%s WHERE id_citoyen=%s"""
+                       est_vivant=%s, sexe=%s, numero_cin=%s, id_localite=%s WHERE id_citoyen=%s"""
             values = (
                 nom,
                 prenom,
@@ -69,6 +93,7 @@ class Citoyen:
                 est_vivant,
                 sexe,
                 numero_cin,
+                id_localite,
                 id_citoyen,
             )
 
@@ -109,7 +134,8 @@ class Citoyen:
                 self.est_vivant = citoyen[5]
                 self.sexe = citoyen[6]
                 self.numero_cin = citoyen[7]
-                print("✅ Citoyen récupéré avec succès")
+                self.id_localite = citoyen[8]
+                print("Citoyen récupéré avec succès")
                 return result[0]
             else:
                 print("⚠️ Aucun citoyen trouvé")

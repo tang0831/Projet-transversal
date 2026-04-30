@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  Users, MapPin, FileText, LogOut, Search, Plus, Trash2, Download, ShieldCheck, User as UserIcon, Menu, X, Pencil
+  Users, MapPin, FileText, LogOut, Search, Plus, Trash2, Download, ShieldCheck, User as UserIcon, Menu, X, Pencil, MessageSquare
 } from 'lucide-react';
 import api from './api';
+import Forum from './components/Forum';
 
 // --- LOGIN COMPONENT ---
 const Login = ({ onLogin }) => {
@@ -55,19 +56,20 @@ const Login = ({ onLogin }) => {
 };
 
 // --- LOCALITES MODULE (FULL CRUD) ---
-const Localites = () => {
+const Localites = ({ user }) => {
   const [list, setList] = useState([]);
   const [form, setForm] = useState({ nom_commune: '', district: '', region: '', code_postal: '' });
   const [editingId, setEditingId] = useState(null);
 
   const fetchList = async () => {
     try {
-      const res = await api.get('/localites');
+      const regionParam = user?.role?.toUpperCase() === 'AGENT' ? `?region=${user.region}` : '';
+      const res = await api.get(`/localites${regionParam}`);
       setList(res.data);
     } catch (e) { console.error(e); }
   };
 
-  useEffect(() => { fetchList(); }, []);
+  useEffect(() => { fetchList(); }, [user]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -145,7 +147,7 @@ const Localites = () => {
 };
 
 // --- CITOYENS MODULE (FULL CRUD) ---
-const Citoyens = () => {
+const Citoyens = ({ user }) => {
   const [list, setList] = useState([]);
   const [search, setSearch] = useState('');
   const [editingId, setEditingId] = useState(null);
@@ -153,12 +155,17 @@ const Citoyens = () => {
 
   const fetchList = async (q = '') => {
     try {
-      const res = await api.get(`/citoyens${q ? `?search=${q}` : ''}`);
+      const params = new URLSearchParams();
+      if (q) params.append('search', q);
+      if (user?.role?.toUpperCase() === 'AGENT' && user.region) {
+        params.append('region', user.region);
+      }
+      const res = await api.get(`/citoyens?${params.toString()}`);
       setList(res.data);
     } catch (e) { console.error(e); }
   };
 
-  useEffect(() => { fetchList(); }, []);
+  useEffect(() => { fetchList(); }, [user]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -252,20 +259,22 @@ const Citoyens = () => {
   );
 };
 
-// --- ACTES MODULE (FULL CRUD + PDF) ---
-const Actes = () => {
+// --- ACTES MODULE (FULL CRUD) ---
+const Actes = ({ user }) => {
   const [list, setList] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({ type_acte: 'NAISSANCE', date_acte: '', numero_registre: '', id_citoyen: '' });
 
   const fetchList = async () => {
     try {
-      const res = await api.get('/actes');
+      const regionParam = user?.role?.toUpperCase() === 'AGENT' && user.region ? `?region=${user.region}` : '';
+      const res = await api.get(`/actes${regionParam}`);
       setList(res.data);
     } catch (e) { console.error(e); }
   };
 
-  useEffect(() => { fetchList(); }, []);
+  useEffect(() => { fetchList(); }, [user]);
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -399,6 +408,7 @@ const App = () => {
     { id: 'localites', label: 'Localités', icon: MapPin, show: isAdmin },
     { id: 'citoyens', label: 'Citoyens', icon: Users, show: isAdmin || isAgent },
     { id: 'actes', label: 'Actes', icon: FileText, show: isAdmin || isAgent },
+    { id: 'forum', label: 'Forum & Demandes', icon: MessageSquare, show: true },
     { id: 'account', label: 'Mon Compte', icon: UserIcon, show: true },
   ], [isAdmin, isAgent]);
 
@@ -468,9 +478,10 @@ const App = () => {
           </header>
           
           <div className="animate-in fade-in duration-700">
-            {activeTab === 'localites' && <Localites />}
-            {activeTab === 'citoyens' && <Citoyens />}
-            {activeTab === 'actes' && <Actes />}
+            {activeTab === 'localites' && <Localites user={user} />}
+            {activeTab === 'citoyens' && <Citoyens user={user} />}
+            {activeTab === 'actes' && <Actes user={user} />}
+            {activeTab === 'forum' && <Forum user={user} />}
             {activeTab === 'account' && <MyAccount user={user} />}
           </div>
         </div>

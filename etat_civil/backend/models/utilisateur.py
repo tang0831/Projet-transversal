@@ -2,30 +2,31 @@ from connexion_base import ConnexionBase
 
 
 class Utilisateur:
-    def __init__(self, nom=None, mot_de_passe=None, role=None, id_utilisateur=None):
+    def __init__(
+        self, nom=None, mot_de_passe=None, role=None, id_utilisateur=None, id_localite=None
+    ):
         self.id_utilisateur = id_utilisateur
         self.nom = nom
         self.mot_de_passe = mot_de_passe
         self.role = role
+        self.id_localite = id_localite
         self.conn = ConnexionBase()
         self.conn.connect()
 
-    def ajouter_utilisateur(self, nom, mot_de_passe, role):
+    def ajouter_utilisateur(self, nom, mot_de_passe, role, id_localite=None):
         try:
-            query = (
-                "INSERT INTO utilisateur (nom, mot_de_passe, role) VALUES (%s, %s, %s)"
-            )
-            values = (nom, mot_de_passe, role)
+            query = "INSERT INTO utilisateur (nom, mot_de_passe, role, id_localite) VALUES (%s, %s, %s, %s)"
+            values = (nom, mot_de_passe, role, id_localite)
             self.conn.execute_query(query, values)
             print("Utilisateur ajouté avec succès")
         except Exception as e:
             print(f"Erreur lors de l'ajout : {e}")
 
-    def modifier_utilisateur(self, id_utilisateur, nom, mot_de_passe, role):
+    def modifier_utilisateur(self, id_utilisateur, nom, mot_de_passe, role, id_localite):
         try:
             # On utilise l'ID passé en paramètre pour savoir qui modifier
-            query = "UPDATE utilisateur SET nom = %s, mot_de_passe = %s, role = %s WHERE id_utilisateur = %s"
-            values = (nom, mot_de_passe, role, id_utilisateur)
+            query = "UPDATE utilisateur SET nom = %s, mot_de_passe = %s, role = %s, id_localite = %s WHERE id_utilisateur = %s"
+            values = (nom, mot_de_passe, role, id_localite, id_utilisateur)
             self.conn.execute_query(query, values)
             print("Utilisateur modifié avec succès")
         except Exception as e:
@@ -53,6 +54,7 @@ class Utilisateur:
                 self.nom = user_data[1]
                 self.mot_de_passe = user_data[2]
                 self.role = user_data[3]
+                self.id_localite = user_data[4]
                 return user_data
             else:
                 print("Aucun utilisateur trouvé")

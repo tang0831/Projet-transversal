@@ -49,6 +49,19 @@ class Acte:
             print(f"❌ Erreur lors de la récupération de l'acte complet : {e}")
             return None
 
+    def lister_par_region(self, region):
+        try:
+            query = """
+                SELECT a.* FROM acte a
+                JOIN Citoyen c ON a.id_citoyen = c.id_citoyen
+                JOIN localite l ON c.id_localite = l.id_localite
+                WHERE l.region = %s
+            """
+            return self.conn.execute_query(query, (region,))
+        except Exception as e:
+            print(f"❌ Erreur lors de la récupération des actes par région : {e}")
+            return []
+
     def lister_par_citoyen(self, id_citoyen):
         try:
             query = "SELECT * FROM acte WHERE id_citoyen = %s"

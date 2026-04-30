@@ -57,12 +57,31 @@ class Localite:
         except Exception as e:
             print(f"❌ Erreur lors de la récupération : {e}")
 
+    def obtenir_region_par_id(self, id_localite):
+        try:
+            query = "SELECT region FROM localite WHERE id_localite = %s"
+            result = self.conn.execute_query(query, (id_localite,))
+            if result:
+                return result[0][0]
+            return None
+        except Exception as e:
+            print(f"❌ Erreur lors de la récupération de la région : {e}")
+            return None
+
     def lister_tout(self):
         try:
             query = "SELECT * FROM localite"
             return self.conn.execute_query(query)
         except Exception as e:
             print(f"❌ Erreur lors de la récupération des localités : {e}")
+            return []
+
+    def lister_par_region(self, region):
+        try:
+            query = "SELECT * FROM localite WHERE region = %s"
+            return self.conn.execute_query(query, (region,))
+        except Exception as e:
+            print(f"❌ Erreur lors de la récupération des localités par région : {e}")
             return []
 
     def supprimer_localite(self, id_localite):

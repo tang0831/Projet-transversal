@@ -11,6 +11,8 @@ from fastapi import Depends, FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from backend.models.forum import ForumModel, DemandeActeModel
+
 app = FastAPI(title="Vision 2035 - État Civil API")
 
 # Configure CORS
@@ -24,6 +26,17 @@ app.add_middleware(
 
 
 # --- MODELS ---
+class MessageCreate(BaseModel):
+    id_utilisateur: int
+    contenu: str
+
+class DemandeCreate(BaseModel):
+    id_utilisateur: int
+    type_acte: str
+
+class StatutUpdate(BaseModel):
+    statut: str
+
 class LoginRequest(BaseModel):
     username: str
     password: str
@@ -48,6 +61,7 @@ class CitoyenBase(BaseModel):
     est_vivant: bool
     sexe: str
     numero_cin: str
+    id_localite: Optional[int] = None
 
 
 class CitoyenOut(CitoyenBase):
@@ -69,27 +83,7 @@ class ActeOut(BaseModel):
     date_registrement: str
 
 
-# --- BOYER-MOORE ---
-def boyer_moore_search(text, pattern):
-    m, n = len(pattern), len(text)
-    if m == 0:
-        return 0
-    last = {pattern[i]: i for i in range(m)}
-    i = m - 1
-    k = m - 1
-    while i < n:
-        if text[i] == pattern[k]:
-            if k == 0:
-                return i
-            else:
-                i -= 1
-                k -= 1
-        else:
-            j = last.get(text[i], -1)
-            i += m - min(k, j + 1)
-            k = m - 1
-    return -1
-
+from backend.structures.boyer_moore import boyer_moore_search
 
 # --- AUTH ---
 @app.post("/auth/login")
@@ -97,13 +91,21 @@ def login(req: LoginRequest):
     user_model = Utilisateur()
     user = user_model.verifier_identifiants(req.username, req.password)
     if user:
-        # user tuple: (id, nom, pwd, role, id_citoyen)
+        # user tuple: (id_utilisateur, nom, mot_de_passe, role, id_localite)
+        id_localite = user[4]
+        region = None
+        if id_localite:
+            loc_model = Localite()
+            region = loc_model.obtenir_region_par_id(id_localite)
+
         return {
             "access_token": "fake-token",
             "token_type": "bearer",
+            "id_utilisateur": user[0],
             "username": user[1],
             "role": user[3],
-            "id_citoyen": user[4],
+            "id_localite": id_localite,
+            "region": region,
         }
     raise HTTPException(status_code=401, detail="Identifiants invalides")
 
@@ -147,9 +149,12 @@ def download_acte_pdf(id_acte: int):
 
 # --- LOCALITES ---
 @app.get("/localites", response_model=List[LocaliteOut])
-def get_localites():
+def get_localites(region: Optional[str] = None):
     loc = Localite()
-    res = loc.lister_tout()
+    if region:
+        res = loc.lister_par_region(region)
+    else:
+        res = loc.lister_tout()
     return [
         {
             "id_localite": r[0],
@@ -193,9 +198,13 @@ def delete_localite(id_localite: int):
 
 # --- CITOYENS ---
 @app.get("/citoyens", response_model=List[CitoyenOut])
-def get_citoyens(search: Optional[str] = None):
+def get_citoyens(search: Optional[str] = None, region: Optional[str] = None):
     cit_model = Citoyen()
-    res = cit_model.lister_tout()
+    if region:
+        res = cit_model.lister_par_region(region)
+    else:
+        res = cit_model.lister_tout()
+        
     all_citoyens = [
         {
             "id_citoyen": r[0],
@@ -206,6 +215,7 @@ def get_citoyens(search: Optional[str] = None):
             "lieu_naissance": r[5],
             "est_vivant": bool(r[6]),
             "sexe": r[7],
+            "id_localite": r[8],
         }
         for r in res
     ]
@@ -232,6 +242,7 @@ def create_citoyen(c: CitoyenBase):
         c.est_vivant,
         c.sexe,
         c.numero_cin,
+        c.id_localite,
     )
     return {"message": "Citoyen ajouté"}
 
@@ -248,6 +259,7 @@ def update_citoyen(id_citoyen: int, c: CitoyenBase):
         c.est_vivant,
         c.sexe,
         c.numero_cin,
+        c.id_localite,
     )
     return {"message": "Citoyen modifié"}
 
@@ -261,9 +273,13 @@ def delete_citoyen(id_citoyen: int):
 
 # --- ACTES ---
 @app.get("/actes", response_model=List[ActeOut])
-def get_actes():
+def get_actes(region: Optional[str] = None):
     acte_model = Acte()
-    res = acte_model.lister_tout()
+    if region:
+        res = acte_model.lister_par_region(region)
+    else:
+        res = acte_model.lister_tout()
+        
     return [
         {
             "id_acte": r[0],
@@ -336,3 +352,65 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+# --- FORUM & DEMANDES ---
+@app.get("/forum/messages")
+def get_forum_messages():
+    model = ForumModel()
+    res = model.lister_messages()
+    return [
+        {
+            "id_message": r[0],
+            "contenu": r[1],
+            "date_envoi": str(r[2]),
+            "username": r[3],
+            "role": r[4]
+        }
+        for r in res
+    ]
+
+@app.post("/forum/messages")
+def post_forum_message(msg: MessageCreate):
+    model = ForumModel()
+    model.ajouter_message(msg.id_utilisateur, msg.contenu)
+    return {"message": "Message envoyé"}
+
+@app.get("/demandes")
+def get_demandes(id_utilisateur: Optional[int] = None):
+    model = DemandeActeModel()
+    if id_utilisateur:
+        res = model.lister_par_utilisateur(id_utilisateur)
+        return [
+            {
+                "id_demande": r[0],
+                "id_utilisateur": r[1],
+                "type_acte": r[2],
+                "statut": r[3],
+                "date_demande": str(r[4])
+            }
+            for r in res
+        ]
+    else:
+        res = model.lister_toutes()
+        return [
+            {
+                "id_demande": r[0],
+                "type_acte": r[1],
+                "statut": r[2],
+                "date_demande": str(r[3]),
+                "username": r[4]
+            }
+            for r in res
+        ]
+
+@app.post("/demandes")
+def create_demande(dem: DemandeCreate):
+    model = DemandeActeModel()
+    model.creer_demande(dem.id_utilisateur, dem.type_acte)
+    return {"message": "Demande créée"}
+
+@app.put("/demandes/{id_demande}")
+def update_demande_statut(id_demande: int, status: StatutUpdate):
+    model = DemandeActeModel()
+    model.mettre_a_jour_statut(id_demande, status.statut)
+    return {"message": "Statut mis à jour"}
