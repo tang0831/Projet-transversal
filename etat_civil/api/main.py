@@ -37,6 +37,13 @@ class DemandeCreate(BaseModel):
 class StatutUpdate(BaseModel):
     statut: str
 
+class UserUpdate(BaseModel):
+    nom: str
+    mot_de_passe: str
+    role: str
+    id_localite: Optional[int] = None
+    photo: Optional[str] = None
+
 class LoginRequest(BaseModel):
     username: str
     password: str
@@ -414,3 +421,28 @@ def update_demande_statut(id_demande: int, status: StatutUpdate):
     model = DemandeActeModel()
     model.mettre_a_jour_statut(id_demande, status.statut)
     return {"message": "Statut mis à jour"}
+
+# --- USER PROFILE ---
+@app.get("/users/{id_utilisateur}")
+def get_user_profile(id_utilisateur: int):
+    model = Utilisateur()
+    user = model.obtenir_utilisateur(id_utilisateur)
+    if user:
+        return {
+            "id_utilisateur": user[0],
+            "nom": user[1],
+            "mot_de_passe": user[2],
+            "role": user[3],
+            "id_localite": user[4],
+            "photo": user[5] if len(user) > 5 else None
+        }
+    raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+
+@app.put("/users/{id_utilisateur}")
+def update_user_profile(id_utilisateur: int, u: UserUpdate):
+    try:
+        model = Utilisateur()
+        model.modifier_utilisateur(id_utilisateur, u.nom, u.mot_de_passe, u.role, u.id_localite, u.photo)
+        return {"message": "Profil mis à jour"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
