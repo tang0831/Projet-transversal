@@ -5,16 +5,16 @@ from datetime import datetime
 
 # Import des modèles (Assure-toi que tes fichiers sont dans src/models/)
 try:
-    from backend.models.acte import Acte
-    from backend.models.citoyen import Citoyen
-    from backend.models.localite import Localite
-    from backend.models.utilisateur import Utilisateur
+    from models.acte import Acte
+    from models.citoyen import Citoyen
+    from models.localite import Localite
+    from models.utilisateur import Utilisateur
 except ImportError as e:
     print(f"❌ Erreur d'importation : {e}")
     sys.exit(1)
 
 
-from backend.structures.boyer_moore import boyer_moore_search
+from structures.boyer_moore import boyer_moore_search
 
 
 # --- UTILITAIRES INTERFACE ---

@@ -17,7 +17,7 @@ class FileSynchronisation:
             self.priorite = priorite
             self.date_creation = date_creation
 
-            query = "INSERT INTO files_synchro (donnees_synchro, statut, priorite, date_creation) VALUES (?, ?, ?, ?)"
+            query = "INSERT INTO files_synchro (donnees_synchro, statut, priorite, date_creation) VALUES (%s, %s, %s, %s)"
             values = (donnees_synchro, statut, priorite, date_creation)
 
             self.conn.execute_query(query, values)
@@ -34,7 +34,7 @@ class FileSynchronisation:
             self.priorite = priorite
             self.date_creation = date_creation
 
-            query = "UPDATE files_synchro SET donnees_synchro = ?, statut = ?, priorite = ?, date_creation = ? WHERE id = ?"
+            query = "UPDATE files_synchro SET donnees_synchro = %s, statut = %s, priorite = %s, date_creation = %s WHERE id = %s"
             values = (donnees_synchro, statut, priorite, date_creation, id_file)
 
             self.conn.execute_query(query, values)
@@ -46,7 +46,7 @@ class FileSynchronisation:
 
     def supprimer_file(self, id_file):
         try:
-            query = "DELETE FROM files_synchro WHERE id = ?"
+            query = "DELETE FROM files_synchro WHERE id = %s"
             values = (id_file,)
 
             self.conn.execute_query(query, values)
@@ -58,7 +58,7 @@ class FileSynchronisation:
 
     def obtenir_file(self, id_file):
         try:
-            query = "SELECT * FROM files_synchro WHERE id = ?"
+            query = "SELECT * FROM files_synchro WHERE id = %s"
             values = (id_file,)
             result = self.conn.execute_query(query, values)
 

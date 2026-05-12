@@ -2,7 +2,6 @@ from connexion_base import ConnexionBase
 
 
 class Citoyen:
-    # 1. On rend TOUS les paramètres optionnels avec =None
     def __init__(
         self,
         nom=None,
@@ -37,7 +36,6 @@ class Citoyen:
         id_localite=None,
     ):
         try:
-            # 2. Remplacement des '?' par '%s' pour MySQL
             query = """INSERT INTO Citoyen (nom, prenom, date_naissance, lieu_naissance, est_vivant, sexe, numero_cin, id_localite)
                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
             values = (
@@ -56,6 +54,7 @@ class Citoyen:
 
         except Exception as e:
             print(f"Erreur lors de l'ajout du citoyen ❌ : {e}")
+            raise e
 
     def lister_par_region(self, region):
         try:
@@ -67,7 +66,7 @@ class Citoyen:
             return self.conn.execute_query(query, (region,))
         except Exception as e:
             print(f"❌ Erreur lors de la récupération des citoyens par région : {e}")
-            return []
+            raise e
 
     def modifier_citoyen(
         self,
@@ -82,7 +81,6 @@ class Citoyen:
         id_localite=None,
     ):
         try:
-            # 2. Remplacement des '?' par '%s'
             query = """UPDATE Citoyen SET nom=%s, prenom=%s, date_naissance=%s, lieu_naissance=%s,
                        est_vivant=%s, sexe=%s, numero_cin=%s, id_localite=%s WHERE id_citoyen=%s"""
             values = (
@@ -102,6 +100,7 @@ class Citoyen:
 
         except Exception as e:
             print(f"Erreur lors de la modification du citoyen ❌ : {e}")
+            raise e
 
     def supprimer_citoyen(self, id_citoyen):
         try:
@@ -110,6 +109,7 @@ class Citoyen:
             print(" Citoyen supprimé avec succès")
         except Exception as e:
             print(f"Erreur lors de la suppression du citoyen ❌ : {e}")
+            raise e
 
     def lister_tout(self):
         try:
@@ -117,7 +117,7 @@ class Citoyen:
             return self.conn.execute_query(query)
         except Exception as e:
             print(f"❌ Erreur lors de la récupération des citoyens : {e}")
-            return []
+            raise e
 
     def obtenir_citoyen(self, id_citoyen):
         try:
@@ -125,23 +125,11 @@ class Citoyen:
             result = self.conn.execute_query(query, (id_citoyen,))
 
             if result:
-                citoyen = result[0]
-                self.id_citoyen = citoyen[0]
-                self.nom = citoyen[1]
-                self.prenom = citoyen[2]
-                self.date_naissance = citoyen[3]
-                self.lieu_naissance = citoyen[4]
-                self.est_vivant = citoyen[5]
-                self.sexe = citoyen[6]
-                self.numero_cin = citoyen[7]
-                self.id_localite = citoyen[8]
-                print("Citoyen récupéré avec succès")
                 return result[0]
-            else:
-                print("⚠️ Aucun citoyen trouvé")
-                return None
+            return None
         except Exception as e:
             print(f"Erreur lors de la récupération du citoyen : {e}")
+            raise e
 
     def marquer_comme_decede(self, id_citoyen):
         try:
@@ -150,3 +138,4 @@ class Citoyen:
             print(f"✅ Citoyen ID {id_citoyen} marqué comme décédé.")
         except Exception as e:
             print(f"❌ Erreur lors de la mise à jour du statut : {e}")
+            raise e

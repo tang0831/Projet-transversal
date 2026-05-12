@@ -9,14 +9,17 @@ class ForumModel:
         query = "INSERT INTO forum_message (id_utilisateur, contenu) VALUES (%s, %s)"
         self.conn.execute_query(query, (id_utilisateur, contenu))
 
-    def lister_messages(self):
+    def lister_messages_par_district(self, district):
+        """Liste les messages filtrés par le district de l'utilisateur"""
         query = """
             SELECT m.id_message, m.contenu, m.date_envoi, u.nom, u.role
             FROM forum_message m
             JOIN utilisateur u ON m.id_utilisateur = u.id_utilisateur
+            JOIN localite l ON u.id_localite = l.id_localite
+            WHERE l.district = %s
             ORDER BY m.date_envoi ASC
         """
-        return self.conn.execute_query(query)
+        return self.conn.execute_query(query, (district,))
 
 
 class DemandeActeModel:

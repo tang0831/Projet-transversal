@@ -34,6 +34,7 @@ class Acte:
             print(" Acte ajouté avec succès")
         except Exception as e:
             print(f"❌ Erreur lors de l'ajout de l'acte : {e}")
+            raise e
 
     def obtenir_acte_complet(self, id_acte):
         try:
@@ -47,7 +48,7 @@ class Acte:
             return result[0] if result else None
         except Exception as e:
             print(f"❌ Erreur lors de la récupération de l'acte complet : {e}")
-            return None
+            raise e
 
     def lister_par_region(self, region):
         try:
@@ -60,7 +61,7 @@ class Acte:
             return self.conn.execute_query(query, (region,))
         except Exception as e:
             print(f"❌ Erreur lors de la récupération des actes par région : {e}")
-            return []
+            raise e
 
     def lister_par_citoyen(self, id_citoyen):
         try:
@@ -68,11 +69,10 @@ class Acte:
             return self.conn.execute_query(query, (id_citoyen,))
         except Exception as e:
             print(f"❌ Erreur lors de la récupération des actes du citoyen : {e}")
-            return []
+            raise e
 
     def obtenir_acte(self, id_acte):
         try:
-            # Vérifie bien que ta colonne s'appelle id_acte dans MySQL
             query = "SELECT * FROM acte WHERE id_acte = %s"
             result = self.conn.execute_query(query, (id_acte,))
             if result:
@@ -82,13 +82,12 @@ class Acte:
                 self.date_acte = data[2]
                 self.numero_registre = data[3]
                 self.date_registrement = data[4]
-                print("Acte récupéré avec succès")
+                self.id_citoyen = data[5] if len(data) > 5 else None
                 return data
-            else:
-                print("⚠️ Aucun acte trouvé")
-                return None
+            return None
         except Exception as e:
             print(f"❌ Erreur lors de la récupération de l'acte : {e}")
+            raise e
 
     def modifier_acte(
         self, id_acte, type_acte, date_acte, numero_registre, date_registrement
@@ -100,6 +99,7 @@ class Acte:
             print("Acte modifié avec succès")
         except Exception as e:
             print(f"❌ Erreur lors de la modification de l'acte : {e}")
+            raise e
 
     def supprimer_acte(self, id_acte):
         try:
@@ -108,6 +108,16 @@ class Acte:
             print("Acte supprimé avec succès")
         except Exception as e:
             print(f"❌ Erreur lors de la suppression de l'acte : {e}")
+            raise e
+
+    def supprimer_par_citoyen(self, id_citoyen):
+        try:
+            query = "DELETE FROM acte WHERE id_citoyen = %s"
+            self.conn.execute_query(query, (id_citoyen,))
+            print(f"Actes du citoyen {id_citoyen} supprimés")
+        except Exception as e:
+            print(f"❌ Erreur lors de la suppression des actes du citoyen : {e}")
+            raise e
 
     def lister_tout(self):
         try:
@@ -115,4 +125,4 @@ class Acte:
             return self.conn.execute_query(query)
         except Exception as e:
             print(f"❌ Erreur lors de la récupération des actes : {e}")
-            return []
+            raise e

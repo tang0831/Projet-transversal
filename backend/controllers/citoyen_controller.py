@@ -1,13 +1,13 @@
 from datetime import date
-from typing import Optional
-
+from typing import Optional, List, Dict, Any
 from connexion_base import ConnexionBase
 from fastapi import HTTPException
-from backend.models.citoyen import Citoyen
+from models.citoyen import Citoyen
+from models.acte import Acte
+from structures.boyer_moore import boyer_moore_search
+from pydantic import BaseModel
 
-
-# Schéma Pydantic pour valider les données entrantes
-class CitoyenSchema(ConnexionBase):
+class CitoyenSchema(BaseModel):
     nom: str
     prenom: str
     date_naissance: date
@@ -15,87 +15,93 @@ class CitoyenSchema(ConnexionBase):
     est_vivant: bool
     sexe: str
     numero_cin: str
-    date_registrement: Optional[date] = date.today()
-
+    id_localite: Optional[int] = None
 
 class CitoyenController:
     def __init__(self):
-        # On initialise le modèle avec des valeurs vides
-        self.modele_citoyen = Citoyen(None, None, None, None, None, None, None)
+        self.modele_citoyen = Citoyen()
+        self.modele_acte = Acte()
+
+    def _tuple_to_dict(self, c: tuple) -> Dict[str, Any]:
+        return {
+            "id_citoyen": c[0],
+            "numero_cin": c[1],
+            "nom": c[2],
+            "prenom": c[3],
+            "date_naissance": str(c[4]) if c[4] else None,
+            "lieu_naissance": c[5],
+            "est_vivant": bool(c[6]),
+            "sexe": c[7],
+            "id_localite": c[8]
+        }
+
+    def list_all(self) -> List[Dict[str, Any]]:
+        citoyens = self.modele_citoyen.lister_tout()
+        return [self._tuple_to_dict(c) for c in citoyens]
 
     def create_citoyen(self, data: CitoyenSchema):
-        """Logique pour ajouter un citoyen"""
         try:
             self.modele_citoyen.ajouter_citoyen(
-                data.nom,
+                data.nom.upper(),
                 data.prenom,
                 data.date_naissance,
                 data.lieu_naissance,
                 data.est_vivant,
                 data.sexe,
                 data.numero_cin,
+                data.id_localite
             )
-            return {
-                "status": "success",
-                "message": "Acte enregistré avec succès dans MySQL",
-            }
+            return {"status": "success", "message": "Citoyen enregistré avec succès"}
         except Exception as e:
-            raise HTTPException(
-                status_code=500, detail=f"Erreur lors de la création : {str(e)}"
-            )
+            raise HTTPException(status_code=500, detail=str(e))
+
+    def search_citoyens(self, pattern: str) -> List[Dict[str, Any]]:
+        try:
+            citoyens = self.modele_citoyen.lister_tout()
+            if not citoyens: return []
+            
+            pattern = pattern.upper()
+            resultats = []
+            for c in citoyens:
+                if (c[2] and boyer_moore_search(c[2].upper(), pattern) != -1) or                    (c[3] and boyer_moore_search(c[3].upper(), pattern) != -1):
+                    resultats.append(self._tuple_to_dict(c))
+            return resultats
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
 
     def get_citoyen(self, id_citoyen: int):
-        """Logique pour récupérer un citoyen spécifique"""
         try:
-            self.modele_citoyen.obtenir_citoyen(id_citoyen)
-
-            if (
-                hasattr(self.modele_citoyen, "id_citoyen")
-                and self.modele_citoyen.id_citoyen is not None
-            ):
-                return {
-                    "id": self.modele_citoyen.id_citoyen,
-                    "nom": self.modele_citoyen.nom,
-                    "prenom": self.modele_citoyen.prenom,
-                    "date_naissance": self.modele_citoyen.date_naissance,
-                    "lieu_naissance": self.modele_citoyen.lieu_naissance,
-                    "est_vivant": self.modele_citoyen.est_vivant,
-                    "sexe": self.modele_citoyen.sexe,
-                    "numero_cin": self.modele_citoyen.numero_cin,
-                }
-            else:
-                raise HTTPException(status_code=404, detail="Acte non trouvé")
+            res = self.modele_citoyen.obtenir_citoyen(id_citoyen)
+            if res:
+                return self._tuple_to_dict(res)
+            raise HTTPException(status_code=404, detail="Citoyen non trouvé")
         except Exception as e:
+            if isinstance(e, HTTPException): raise e
             raise HTTPException(status_code=500, detail=str(e))
 
     def update_citoyen(self, id_citoyen: int, data: CitoyenSchema):
-        """Logique pour modifier un citoyen"""
         try:
-            # On vérifie d'abord si l'acte existe
-            self.modele_citoyen.obtenir_citoyen(id_citoyen)
-            if not hasattr(self.modele_citoyen, "id_citoyen"):
-                raise HTTPException(
-                    status_code=404, detail="Acte introuvable pour modification"
-                )
-
             self.modele_citoyen.modifier_citoyen(
                 id_citoyen,
-                data.nom,
+                data.nom.upper(),
                 data.prenom,
                 data.date_naissance,
                 data.lieu_naissance,
                 data.est_vivant,
                 data.sexe,
                 data.numero_cin,
+                data.id_localite
             )
-            return {"status": "success", "message": f"Citoyen {id_citoyen} mis à jour"}
+            return {"status": "success", "message": "Citoyen mis à jour"}
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 
-    def delete_acte(self, id_citoyen: int):
-        """Logique pour supprimer un acte"""
+    def delete_citoyen(self, id_citoyen: int):
         try:
+            # On supprime d'abord les actes liés (cascade manuelle)
+            self.modele_acte.supprimer_par_citoyen(id_citoyen)
+            # Puis on supprime le citoyen
             self.modele_citoyen.supprimer_citoyen(id_citoyen)
-            return {"status": "success", "message": f"Citoyen {id_citoyen} supprimé"}
+            return {"status": "success", "message": "Citoyen et ses actes supprimés"}
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))

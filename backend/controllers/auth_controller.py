@@ -1,70 +1,72 @@
 from fastapi import HTTPException, Request
-from backend.models.utilisateur import Utilisateur
+from pydantic import BaseModel
+from typing import Optional
+from models.utilisateur import Utilisateur
+from models.localite import Localite
 
+class LoginSchema(BaseModel):
+    username: str
+    password: str
 
 class UtilisateurController:
     def __init__(self):
-        # On initialise le modèle (les arguments sont None par défaut dans le __init__ corrigé)
-        self.modele_utilisateur = Utilisateur(None, None, None)
+        self.modele_utilisateur = Utilisateur()
 
-    async def create_user(self, request: Request):
-        """Ajouter un utilisateur (POST)"""
+    async def login(self, data: LoginSchema):
         try:
-            data = await request.json()
+            user = self.modele_utilisateur.verifier_identifiants(data.username, data.password)
+            if user:
+                id_localite = user[4] if len(user) > 4 else None
+                photo = user[5] if len(user) > 5 else None
+                district, region = None, None
+                
+                if id_localite:
+                    loc_data = Localite().obtenir_localite(id_localite)
+                    if loc_data:
+                        district, region = loc_data[2], loc_data[3]
 
-            # Vérification manuelle des champs
-            if not all(k in data for k in ("nom", "mot_de_passe", "role")):
-                raise HTTPException(
-                    status_code=400,
-                    detail="Données incomplètes (nom, mot_de_passe, role requis)",
-                )
-
-            self.modele_utilisateur.ajouter_utilisateur(
-                data["nom"], data["mot_de_passe"], data["role"]
-            )
-            return {"status": "success", "message": f"Utilisateur {data['nom']} créé"}
-
+                return {
+                    "id_utilisateur": user[0],
+                    "username": user[1],
+                    "role": user[3],
+                    "id_localite": id_localite,
+                    "district": district,
+                    "region": region,
+                    "photo": photo
+                }
+            raise HTTPException(status_code=401, detail="Identifiants invalides")
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 
-    async def get_user(self, id_utilisateur: int):
-        """Récupérer un utilisateur par son ID (GET)"""
+    async def create_user(self, request: Request):
         try:
-            res = self.modele_utilisateur.obtenir_utilisateur(id_utilisateur)
-            if res:
-                return {
-                    "id": id_utilisateur,
-                    "nom": self.modele_utilisateur.nom,
-                    "role": self.modele_utilisateur.role,
-                }
-            raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+            data = await request.json()
+            nom = data.get("nom")
+            pwd = data.get("mot_de_passe")
+            role = data.get("role")
+            if not nom or not pwd or not role:
+                raise HTTPException(status_code=400, detail="Champs obligatoires manquants")
+
+            self.modele_utilisateur.ajouter_utilisateur(nom, pwd, role, data.get("id_localite"), data.get("photo"))
+            return {"status": "success", "message": "Utilisateur créé"}
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 
     async def update_user(self, id_utilisateur: int, request: Request):
-        """Modifier un utilisateur (PUT)"""
+        """Mise à jour du profil avec gestion dynamique des champs"""
         try:
             data = await request.json()
-            self.modele_utilisateur.modifier_utilisateur(
-                id_utilisateur,
-                data.get("nom"),
-                data.get("mot_de_passe"),
-                data.get("role"),
-            )
-            return {
-                "status": "success",
-                "message": f"Utilisateur {id_utilisateur} mis à jour",
-            }
+            # On retire les champs qui ne doivent pas être modifiés par l'utilisateur ou qui sont vides
+            filtered_data = {k: v for k, v in data.items() if v is not None and k != "id_utilisateur"}
+            
+            self.modele_utilisateur.modifier_utilisateur(id_utilisateur, **filtered_data)
+            return {"status": "success", "message": "Profil mis à jour"}
         except Exception as e:
+            print(f"Erreur controller update: {e}")
             raise HTTPException(status_code=500, detail=str(e))
 
-    async def delete_user(self, id_utilisateur: int):
-        """Supprimer un utilisateur (DELETE)"""
-        try:
-            self.modele_utilisateur.supprimer_utilisateur(id_utilisateur)
-            return {
-                "status": "success",
-                "message": f"Utilisateur {id_utilisateur} supprimé",
-            }
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+    async def get_user(self, id_user: int):
+        res = self.modele_utilisateur.obtenir_utilisateur(id_user)
+        if res:
+            return {"id": res[0], "nom": res[1], "role": res[3], "photo": res[5] if len(res) > 5 else None}
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
