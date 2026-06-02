@@ -1,22 +1,41 @@
-import React, { useState, useEffect } from 'react';
-import { Send, FilePlus, CheckCircle, Clock, XCircle, MessageSquare } from 'lucide-react';
-import api from '../api';
+import { useState, useEffect } from "react";
+import {
+  Send,
+  FilePlus,
+  CheckCircle,
+  Clock,
+  XCircle,
+  MessageSquare,
+  FileText,
+  Download,
+  Search,
+} from "lucide-react";
+import api from "../api";
 
 const Forum = ({ user }) => {
   const [messages, setMessages] = useState([]);
   const [demandes, setDemandes] = useState([]);
-  const [newMessage, setNewMessage] = useState('');
+  const [newMessage, setNewMessage] = useState("");
   const [showDemandeForm, setShowDemandeForm] = useState(false);
-  const [typeActe, setTypeActe] = useState('NAISSANCE');
+  const [typeActe, setTypeActe] = useState("NAISSANCE");
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const isAgent = user?.role?.toUpperCase() === 'AGENT' || user?.role?.toUpperCase() === 'ADMIN' || user?.role?.toUpperCase() === 'ADMINISTRATEUR';
+  const isAgent =
+    user?.role?.toUpperCase() === "AGENT" ||
+    user?.role?.toUpperCase() === "ADMIN" ||
+    user?.role?.toUpperCase() === "ADMINISTRATEUR";
 
   const fetchData = async () => {
     try {
-      const msgRes = await api.get('/forum/messages');
+      const district = user?.district || "Analamanga";
+      const msgRes = await api.get(`/forum/messages?district=${district}`);
       setMessages(msgRes.data);
 
-      const demRes = await api.get(`/demandes${isAgent ? '' : `?id_utilisateur=${user.id_utilisateur}`}`);
+      let url = "/demandes";
+      if (!isAgent) {
+        url = `/demandes?id_utilisateur=${user.id_utilisateur}`;
+      }
+      const demRes = await api.get(url);
       setDemandes(demRes.data);
     } catch (e) {
       console.error(e);
@@ -33,121 +52,322 @@ const Forum = ({ user }) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
     try {
-      await api.post('/forum/messages', { id_utilisateur: user.id_utilisateur, contenu: newMessage });
-      setNewMessage('');
+      await api.post("/forum/messages", {
+        id_utilisateur: user.id_utilisateur,
+        contenu: newMessage,
+      });
+      setNewMessage("");
       fetchData();
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleCreateDemande = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/demandes', { id_utilisateur: user.id_utilisateur, type_acte: typeActe });
+      await api.post("/demandes", {
+        id_utilisateur: user.id_utilisateur,
+        type_acte: typeActe,
+      });
       setShowDemandeForm(false);
       fetchData();
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleUpdateStatus = async (id, status) => {
     try {
       await api.put(`/demandes/${id}`, { statut: status });
       fetchData();
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
+  const filteredMessages = messages.filter(
+    (m) =>
+      m.contenu?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      m.username?.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
+
+  const enAttenteCount = demandes.filter(
+    (d) => d.statut === "EN_ATTENTE",
+  ).length;
+  const valideesCount = demandes.filter((d) => d.statut === "VALIDEE").length;
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-[calc(100vh-250px)]">
-      {/* Forum Discussion */}
-      <div className="lg:col-span-2 flex flex-col bg-white rounded-2xl shadow-sm border overflow-hidden">
-        <div className="p-4 border-b bg-gray-50 flex items-center gap-2">
-          <MessageSquare className="text-blue-600" />
-          <h3 className="font-bold uppercase text-sm tracking-widest">Forum de Discussion</h3>
+    <div className="flex flex-col gap-6 h-[calc(100vh-140px)] p-1 text-slate-800">
+      {/* 1. STATS CARDS */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 shrink-0">
+        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center gap-4">
+          <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
+            <FileText className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+              Total Dossiers
+            </p>
+            <p className="text-xl font-black text-slate-800">
+              {demandes.length}
+            </p>
+          </div>
         </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.map((m) => (
-            <div key={m.id_message} className={`flex flex-col ${m.username === user.username ? 'items-end' : 'items-start'}`}>
-              <div className={`max-w-[80%] p-3 rounded-2xl ${m.username === user.username ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-gray-100 text-gray-800 rounded-tl-none'}`}>
-                <p className="text-xs font-bold mb-1 opacity-70">{m.username} ({m.role})</p>
-                <p className="text-sm">{m.contenu}</p>
-                <p className="text-[10px] mt-1 opacity-50 text-right">{new Date(m.date_envoi).toLocaleTimeString()}</p>
-              </div>
-            </div>
-          ))}
+
+        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center gap-4">
+          <div className="p-3 bg-amber-50 text-amber-600 rounded-lg">
+            <Clock className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+              En cours d'examen
+            </p>
+            <p className="text-xl font-black text-slate-800">
+              {enAttenteCount}
+            </p>
+          </div>
         </div>
-        <form onSubmit={handleSendMessage} className="p-4 border-t flex gap-2">
-          <input 
-            value={newMessage} 
-            onChange={e => setNewMessage(e.target.value)}
-            className="flex-1 border rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Écrivez un message..."
-          />
-          <button type="submit" className="bg-blue-600 text-white p-2 rounded-xl hover:bg-blue-700 transition-colors">
-            <Send size={20} />
-          </button>
-        </form>
+
+        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center gap-4">
+          <div className="p-3 bg-green-50 text-green-600 rounded-lg">
+            <CheckCircle className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+              Actes Délivrés
+            </p>
+            <p className="text-xl font-black text-slate-800">{valideesCount}</p>
+          </div>
+        </div>
       </div>
 
-      {/* Demandes Section */}
-      <div className="flex flex-col gap-6">
-        <div className="bg-white rounded-2xl shadow-sm border p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold uppercase text-sm tracking-widest">Demandes d'Actes</h3>
-            {!isAgent && (
-              <button 
-                onClick={() => setShowDemandeForm(!showDemandeForm)}
-                className="bg-blue-50 text-blue-600 p-2 rounded-lg hover:bg-blue-100 transition-colors"
+      {/* MAIN CONTAINER */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0 overflow-hidden">
+        {/* DISCUSSION ZONE */}
+        <div className="lg:col-span-2 flex flex-col bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
+          <div className="p-4 border-b border-slate-100 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="text-[#007A33] w-5 h-5" />
+              <h3 className="font-bold uppercase text-xs tracking-wider text-slate-700">
+                Forum ({user?.district || "Analamanga"})
+              </h3>
+            </div>
+
+            <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs max-w-xs w-full focus-within:border-[#007A33] focus-within:ring-2 focus-within:ring-[#007A33]/10 transition-all">
+              <Search className="w-3.5 h-3.5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Rechercher un message..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="bg-transparent border-0 outline-none w-full text-slate-700"
+              />
+            </div>
+          </div>
+
+          {/* Messages de discussion corrigés */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/20">
+            {filteredMessages.map((m) => {
+              const isMe = m.username === user.username;
+              const isAdminMsg =
+                m.role?.toUpperCase() === "ADMIN" ||
+                m.role?.toUpperCase() === "AGENT";
+
+              return (
+                <div
+                  key={m.id_message}
+                  className={`flex flex-col ${isMe ? "items-end" : "items-start"} w-full`}
+                >
+                  {/* Meta (Auteur) aligné correctement au-dessus du bloc */}
+                  <div className="text-[11px] font-bold text-slate-400 mb-1 px-1">
+                    <span
+                      className={
+                        isMe
+                          ? "text-slate-600"
+                          : isAdminMsg
+                            ? "text-red-500"
+                            : "text-slate-700"
+                      }
+                    >
+                      {isMe ? "Vous" : m.username || "Utilisateur"}
+                    </span>
+                    <span className="text-[9px] font-medium opacity-60 font-mono ml-1">
+                      ({m.role || "Citoyen"})
+                    </span>
+                  </div>
+
+                  {/* La bulle */}
+                  <div
+                    className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-sm shadow-xs ${
+                      isMe
+                        ? "bg-[#007A33] text-white rounded-tr-none font-medium"
+                        : isAdminMsg
+                          ? "bg-amber-50 border border-amber-200 text-slate-800 rounded-tl-none"
+                          : "bg-white border border-slate-200 text-slate-800 rounded-tl-none"
+                    }`}
+                  >
+                    <p className="leading-relaxed whitespace-pre-wrap">
+                      {m.contenu}
+                    </p>
+                  </div>
+
+                  {/* Heure */}
+                  <span className="text-[9px] text-slate-400 mt-1 px-1 font-mono">
+                    {m.date_envoi
+                      ? new Date(m.date_envoi).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : ""}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Formulaire de saisie réajusté */}
+          <form
+            onSubmit={handleSendMessage}
+            className="p-4 border-t border-slate-100 bg-white shrink-0"
+          >
+            <div className="flex gap-2 items-center bg-slate-50 border border-slate-200 rounded-xl px-3 py-1 focus-within:border-[#007A33] focus-within:ring-2 focus-within:ring-[#007A33]/10 transition-all">
+              <input
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                className="flex-1 bg-transparent border-0 outline-none py-2 text-sm text-slate-800 placeholder-slate-400"
+                placeholder="Posez votre question administrative..."
+              />
+              <button
+                type="submit"
+                disabled={!newMessage.trim()}
+                className="bg-[#007A33] text-white p-2 rounded-lg hover:bg-[#00642a] transition-all disabled:opacity-40 shrink-0"
               >
-                <FilePlus size={20} />
+                <Send size={16} />
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* DEMANDES D'ACTES COLUMN */}
+        <div className="flex flex-col bg-white rounded-2xl shadow-xs border border-slate-200 p-5 overflow-hidden">
+          <div className="flex justify-between items-center mb-4 shrink-0">
+            <h3 className="font-bold uppercase text-xs tracking-wider text-slate-700">
+              Suivi des Demandes
+            </h3>
+            {!isAgent && (
+              <button
+                onClick={() => setShowDemandeForm(!showDemandeForm)}
+                className={`p-2 rounded-lg transition-all ${showDemandeForm ? "bg-red-50 text-red-500" : "bg-green-50 text-[#007A33] hover:bg-green-100"}`}
+              >
+                <FilePlus size={18} />
               </button>
             )}
           </div>
 
           {showDemandeForm && (
-            <form onSubmit={handleCreateDemande} className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-100 animate-in slide-in-from-top duration-300">
-              <label className="block text-xs font-bold text-blue-700 uppercase mb-2">Type d'acte souhaité</label>
-              <select 
-                value={typeActe} 
-                onChange={e => setTypeActe(e.target.value)}
-                className="w-full border rounded-lg p-2 mb-3 bg-white"
+            <form
+              onSubmit={handleCreateDemande}
+              className="mb-4 p-4 bg-green-50/50 rounded-xl border border-green-100/70 shrink-0"
+            >
+              <label className="block text-[11px] font-bold text-[#007A33] uppercase tracking-wider mb-2">
+                Type d'acte requis
+              </label>
+              <select
+                value={typeActe}
+                onChange={(e) => setTypeActe(e.target.value)}
+                className="w-full border border-slate-200 rounded-lg p-2 mb-3 bg-white text-sm font-semibold text-slate-700 outline-none"
               >
-                <option value="NAISSANCE">Acte de Naissance</option>
-                <option value="MARIAGE">Acte de Mariage</option>
-                <option value="DECES">Acte de Décès</option>
+                <option value="NAISSANCE"> Acte de Naissance</option>
+                <option value="MARIAGE"> Acte de Mariage</option>
+                <option value="DECES"> Acte de Décès</option>
               </select>
-              <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded-lg font-bold hover:bg-blue-700">
-                Envoyer la demande
+              <button
+                type="submit"
+                className="w-full bg-[#007A33] text-white py-2 rounded-lg text-xs font-bold uppercase tracking-wider"
+              >
+                Soumettre le dossier
               </button>
             </form>
           )}
 
-          <div className="space-y-4 overflow-y-auto max-h-[400px] pr-2">
-            {demandes.length === 0 && <p className="text-center text-gray-400 italic text-sm py-4">Aucune demande en cours</p>}
-            {demandes.map((d) => (
-              <div key={d.id_demande} className="p-4 border rounded-xl bg-gray-50 hover:bg-white transition-all group">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <p className="font-bold text-sm text-gray-900">{d.type_acte}</p>
-                    <p className="text-[10px] text-gray-400 font-bold uppercase">{isAgent ? `Par: ${d.username}` : new Date(d.date_demande).toLocaleDateString()}</p>
-                  </div>
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                    d.statut === 'VALIDEE' ? 'bg-green-100 text-green-700' : 
-                    d.statut === 'REJETEE' ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'
-                  }`}>
-                    {d.statut}
-                  </span>
-                </div>
-                {isAgent && d.statut === 'EN_ATTENTE' && (
-                  <div className="flex gap-2 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => handleUpdateStatus(d.id_demande, 'VALIDEE')} className="flex-1 bg-green-600 text-white p-1.5 rounded-lg flex justify-center hover:bg-green-700">
-                      <CheckCircle size={16} />
-                    </button>
-                    <button onClick={() => handleUpdateStatus(d.id_demande, 'REJETEE')} className="flex-1 bg-red-600 text-white p-1.5 rounded-lg flex justify-center hover:bg-red-700">
-                      <XCircle size={16} />
-                    </button>
-                  </div>
-                )}
+          {/* Liste corrigée pour d.type ou d.type_acte */}
+          <div className="space-y-3 overflow-y-auto pr-1 flex-1📐">
+            {demandes.length === 0 && (
+              <div className="text-center py-8 text-slate-400 italic text-xs">
+                Aucune demande en cours
               </div>
-            ))}
+            )}
+            {demandes.map((d) => {
+              // Gestion sécurisée du libellé si l'attribut est 'type' ou 'type_acte'
+              const displayType = d.type || d.type_acte || "Non spécifié";
+
+              return (
+                <div
+                  key={d.id}
+                  className="p-3.5 border border-slate-100 bg-slate-50/40 rounded-xl hover:bg-white hover:border-slate-200 transition-all shadow-xs group"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      {/* Affichage corrigé de la casse */}
+                      <p className="font-bold text-sm text-slate-800 tracking-tight capitalize">
+                        Acte de {displayType.toLowerCase()}
+                      </p>
+                      <p className="text-[10px] text-slate-400 font-mono mt-0.5">
+                        {isAgent
+                          ? `Citoyen: ${d.citoyen_nom || "Inconnu"} ${d.citoyen_prenom || ""} (CIN: ${d.citoyen_cin || "N/A"})`
+                          : d.date || d.date_demande
+                            ? new Date(d.date || d.date_demande).toLocaleDateString()
+                            : "Date inconnue"}
+                      </p>
+                    </div>
+
+
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${
+                        d.statut === "VALIDEE"
+                          ? "bg-green-50 text-green-700 border-green-100"
+                          : d.statut === "REJETEE"
+                            ? "bg-red-50 text-red-600 border-red-100"
+                            : "bg-amber-50 text-amber-700 border-amber-100"
+                      }`}
+                    >
+                      {d.statut}
+                    </span>
+                  </div>
+
+                  {!isAgent && d.statut === "VALIDEE" && (
+                    <button
+                      onClick={() =>
+                        window.open(`/api/actes/${d.id}/pdf?user_id=${user.id_utilisateur}`, '_blank')
+                      }
+                      className="mt-2 w-full bg-slate-100 hover:bg-[#007A33]/10 hover:text-[#007A33] text-slate-600 font-bold text-xs py-1.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all"
+                    >
+                      <Download className="w-3.5 h-3.5" /> Télécharger mon
+                      Extrait
+                    </button>
+
+                  )}
+
+                  {isAgent && d.statut === "EN_ATTENTE" && (
+                    <div className="flex gap-2 mt-3 pt-2.5 border-t border-slate-100">
+                      <button
+                        onClick={() => handleUpdateStatus(d.id, "VALIDEE")}
+                        className="flex-1 bg-green-600 text-white py-1 rounded-lg flex justify-center hover:bg-green-700"
+                      >
+                        <CheckCircle size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleUpdateStatus(d.id, "REJETEE")}
+                        className="flex-1 bg-red-600 text-white py-1 rounded-lg flex justify-center hover:bg-red-700"
+                      >
+                        <XCircle size={14} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

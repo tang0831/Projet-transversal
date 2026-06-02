@@ -32,9 +32,10 @@ class DemandeActeModel:
 
     def lister_toutes(self):
         query = """
-            SELECT d.id_demande, d.type_acte, d.statut, d.date_demande, u.nom
+            SELECT d.id_demande, d.type_acte, d.statut, d.date_demande, u.nom, c.nom, c.prenom, c.numero_cin
             FROM demande_acte d
             JOIN utilisateur u ON d.id_utilisateur = u.id_utilisateur
+            LEFT JOIN Citoyen c ON u.id_citoyen = c.id_citoyen
             ORDER BY d.date_demande DESC
         """
         return self.conn.execute_query(query)

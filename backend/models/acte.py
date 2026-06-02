@@ -21,20 +21,18 @@ class Acte:
     def ajouter_acte(
         self, type_acte, date_acte, numero_registre, date_registrement, id_citoyen=None
     ):
-        try:
-            query = "INSERT INTO acte (type_acte, date_acte, numero_registre, date_registrement, id_citoyen) VALUES (%s, %s, %s, %s, %s)"
-            values = (
-                type_acte,
-                date_acte,
-                numero_registre,
-                date_registrement,
-                id_citoyen,
-            )
-            self.conn.execute_query(query, values)
-            print(" Acte ajouté avec succès")
-        except Exception as e:
-            print(f"❌ Erreur lors de l'ajout de l'acte : {e}")
-            raise e
+        query = "INSERT INTO acte (type_acte, date_acte, numero_registre, date_registrement, id_citoyen) VALUES (%s, %s, %s, %s, %s)"
+        values = (
+            type_acte,
+            date_acte,
+            numero_registre,
+            date_registrement,
+            id_citoyen,
+        )
+        result = self.conn.execute_query(query, values)
+        if result is None:
+            raise Exception("Erreur d'insertion dans la base de données")
+        print(" Acte ajouté avec succès")
 
     def obtenir_acte_complet(self, id_acte):
         try:
@@ -125,4 +123,16 @@ class Acte:
             return self.conn.execute_query(query)
         except Exception as e:
             print(f"❌ Erreur lors de la récupération des actes : {e}")
+            raise e
+
+    def lister_par_localite(self, id_localite):
+        try:
+            query = """
+                SELECT a.* FROM acte a
+                JOIN Citoyen c ON a.id_citoyen = c.id_citoyen
+                WHERE c.id_localite = %s
+            """
+            return self.conn.execute_query(query, (id_localite,))
+        except Exception as e:
+            print(f"❌ Erreur lors de la récupération des actes par localité : {e}")
             raise e
