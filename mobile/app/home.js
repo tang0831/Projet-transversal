@@ -61,7 +61,7 @@ export default function Home() {
             ) : <Text style={{fontSize: 24}}>⚙️</Text>}
           </TouchableOpacity>
         </View>
-        <Text style={styles.subText}>République de Madagascar - Vision 2035</Text>
+        <Text style={styles.subText}>République de Madagascar - Tokana ID</Text>
       </View>
 
       <View style={styles.grid}>

@@ -21,17 +21,22 @@ class LocaliteController:
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 
-    def list_localites(self):
+    def list_localites(self, id_localite: int = None):
         try:
-            res = self.modele_localite.lister_tout()
+            if id_localite:
+                l = self.modele_localite.obtenir_localite(id_localite)
+                res = [l] if l else []
+            else:
+                res = self.modele_localite.lister_tout()
+            
             return [
                 {
-                    "id_localite": l[0],
-                    "nom_commune": l[1],
-                    "district": l[2],
-                    "region": l[3],
-                    "code_postal": l[4]
-                } for l in res
+                    "id_localite": item[0],
+                    "nom_commune": item[1],
+                    "district": item[2],
+                    "region": item[3],
+                    "code_postal": item[4]
+                } for item in res if item
             ]
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))

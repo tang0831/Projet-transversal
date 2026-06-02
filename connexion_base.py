@@ -8,6 +8,7 @@ class ConnexionBase:
             "user": "root",
             "password": "fanambybisous",
             "database": "Etat_civil",
+            "ssl_disabled": True
         }
         self.conn = None
 

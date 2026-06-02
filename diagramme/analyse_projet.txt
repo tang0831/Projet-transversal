@@ -1,0 +1,205 @@
+```mermaid
+classDiagram
+    %% Core Entities (Models)
+    class Localite {
+        +int id_localite
+        +string nom_commune
+        +string district
+        +string region
+        +string code_postal
+        +ajouter_localite(nom, dist, reg, cp)
+        +modifier_localite(id, nom, dist, reg, cp)
+        +obtenir_localite(id)
+        +lister_tout()
+        +lister_par_region(region)
+        +supprimer_localite(id)
+    }
+
+    class Citoyen {
+        +int id_citoyen
+        +string numero_cin
+        +string nom
+        +string prenom
+        +date date_naissance
+        +string lieu_naissance
+        +bool est_vivant
+        +char sexe
+        +int id_localite
+        +ajouter_citoyen(nom, prenom, date, lieu, vivant, sexe, cin, id_loc)
+        +modifier_citoyen(id, nom, prenom, date, lieu, vivant, sexe, cin, id_loc)
+        +obtenir_citoyen(id)
+        +lister_tout()
+        +lister_par_region(region)
+        +marquer_comme_decede(id)
+        +supprimer_citoyen(id)
+    }
+
+    class Acte {
+        +int id_acte
+        +string type_acte
+        +date date_acte
+        +string numero_registre
+        +datetime date_registrement
+        +int id_citoyen
+        +ajouter_acte(type, date, num, date_reg, id_cit)
+        +modifier_acte(id, type, date, num, date_reg)
+        +obtenir_acte(id)
+        +obtenir_acte_complet(id)
+        +lister_tout()
+        +lister_par_region(region)
+        +lister_par_citoyen(id_cit)
+        +supprimer_acte(id)
+    }
+
+    class Utilisateur {
+        +int id_utilisateur
+        +string nom
+        +string mot_de_passe
+        +string role
+        +int id_localite
+        +string photo
+        +ajouter_utilisateur(nom, mdp, role, id_loc, photo)
+        +modifier_utilisateur(id, **kwargs)
+        +verifier_identifiants(nom, mdp)
+        +obtenir_utilisateur(id)
+        +lister_tout()
+    }
+
+    class ForumModel {
+        +ajouter_message(id_user, contenu)
+        +lister_messages_par_district(district)
+    }
+
+    class DemandeActeModel {
+        +creer_demande(id_user, type)
+        +lister_toutes()
+        +lister_par_utilisateur(id_user)
+        +mettre_a_jour_statut(id, statut)
+    }
+
+    class SystemeLog {
+        +int id_log
+        +string action
+        +string details
+        +datetime date_log
+        +ajouter_log(action, details, date)
+        +obtenir_log(id)
+    }
+
+    class FileSynchronisation {
+        +int id
+        +string donnees_synchro
+        +string statut
+        +int priorite
+        +datetime date_creation
+        +ajouter_file(donnees, statut, prio, date)
+        +modifier_file(id, donnees, statut, prio, date)
+        +obtenir_file(id)
+        +supprimer_file(id)
+    }
+
+    %% Data Structures (Optimization)
+    class AVLTree {
+        +insert(node, key)
+        +delete(root, key)
+        +search(root, key)
+        +leftRotate(z)
+        +rightRotate(y)
+    }
+
+    class Trie {
+        +insert(word)
+        +search(word)
+        +startsWith(prefix)
+    }
+
+    class BoyerMoore {
+        +search(text, pattern)
+        +badCharHeuristic(pattern)
+    }
+
+    class UnionFind {
+        +find(i)
+        +union(i, j)
+        +is_connected(any, any)
+    }
+
+    class Knapsack {
+        +knapsack(W, wt, val, n)
+        +get_selected_items(W, wt, val, n)
+    }
+
+    %% Controllers
+    class ActeController {
+        +list_all()
+        +get_acte(id)
+        +create_acte(data)
+        +update_acte(id, data)
+        +delete_acte(id)
+    }
+
+    class CitoyenController {
+        +list_all()
+        +search_citoyens(query)
+        +create_citoyen(data)
+        +update_citoyen(id, data)
+        +delete_citoyen(id)
+    }
+
+    class UtilisateurController {
+        +login(data)
+        +update_user(id, request)
+        +create_user(request)
+    }
+
+    class LocaliteController {
+        +list_localites()
+        +create_localite(data)
+        +update_localite(id, data)
+        +delete_localite(id)
+    }
+
+    class ForumController {
+        +get_messages(district)
+        +post_message(data)
+    }
+
+    class LogController {
+        %% No public methods explicitly defined in app.py for direct API calls
+    }
+    
+    class SyncController {
+        %% No public methods explicitly defined in app.py for direct API calls
+    }
+
+    %% Relationships
+    Citoyen "1..*" -- "1" Localite : réside dans
+    Acte "1..*" -- "1" Citoyen : concerne
+    Utilisateur "1..*" -- "0..1" Localite : affecté à
+    ForumModel "1" -- "*" Utilisateur : messages de
+    DemandeActeModel "1" -- "*" Utilisateur : demandes de
+    Citoyen "1" -- "*" Citoyen : Parent de (Lien_Parente)
+    SystemeLog "*" -- "0..1" Utilisateur : généré par
+    
+    ActeController ..> Acte : utilise
+    CitoyenController ..> Citoyen : utilise
+    UtilisateurController ..> Utilisateur : utilise
+    LocaliteController ..> Localite : utilise
+    ForumController ..> ForumModel : utilise
+    
+    ActeController ..> CitoyenController : utilise
+    CitoyenController ..> Localite : utilise (pour lister par région)
+    
+    ForumController ..> Utilisateur : utilise
+    ForumController ..> Localite : utilise (pour filtrer par district)
+
+    UtilisateurController ..> Localite : utilise (pour l'affectation)
+
+    ActeController ..> Knapsack : utilise (pour l'optimisation)
+    
+    %% Documentation notes
+    note for AVLTree "Utilisé pour la hiérarchie des localités"
+    note for Trie "Utilisé pour l'autocomplétion des noms"
+    note for BoyerMoore "Utilisé pour la recherche de motifs dans les logs"
+    note for Knapsack "Optimisation du déploiement des agents"
+```

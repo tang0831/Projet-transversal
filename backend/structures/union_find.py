@@ -7,7 +7,6 @@ class UnionFind:
     def find(self, i):
         if self.parent[i] == i:
             return i
-        # Path compression
         self.parent[i] = self.find(self.parent[i])
         return self.parent[i]
 
@@ -16,7 +15,6 @@ class UnionFind:
         root_j = self.find(j)
 
         if root_i != root_j:
-            # Union by rank
             if self.rank[root_i] < self.rank[root_j]:
                 self.parent[root_i] = root_j
             elif self.rank[root_i] > self.rank[root_j]:

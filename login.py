@@ -15,7 +15,7 @@ def login_user(username, password):
 if __name__ == "__main__":
     import getpass
 
-    print("--- CONNEXION VISION 2035 ---")
+    print("--- CONNEXION TOKANA ID ---")
     u = input("Utilisateur : ")
     p = getpass.getpass("Mot de passe : ")
     login_user(u, p)

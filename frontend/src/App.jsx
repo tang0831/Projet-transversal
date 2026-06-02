@@ -3,11 +3,14 @@ import {
   Users, MapPin, FileText, LogOut, Search, Plus, Trash2, Download, ShieldCheck, User as UserIcon, Menu, X, Pencil, MessageSquare, Home as HomeIcon
 } from 'lucide-react';
 import api from './api';
+import { Trie } from './Trie';
 import Forum from './components/Forum';
 import Home from './components/Home';
+import LegacyHome from './components/LegacyHome';
+import Landing from './components/Landing';
 
 // --- LOGIN COMPONENT ---
-const Login = ({ onLogin }) => {
+const Login = ({ onLogin, onToggleRegister }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -19,7 +22,7 @@ const Login = ({ onLogin }) => {
     setError('');
     try {
       const res = await api.post('/auth/login', { username, password });
-      onLogin(res.data); // res.data contains id_utilisateur, username, role, etc.
+      onLogin(res.data);
     } catch (err) {
       setError('Identifiants invalides');
     } finally {
@@ -31,26 +34,112 @@ const Login = ({ onLogin }) => {
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
         <div className="flex justify-center mb-6">
-          <div className="bg-blue-100 p-3 rounded-full">
-            <ShieldCheck className="w-12 h-12 text-blue-600" />
+          <div className="bg-green-100 p-3 rounded-full">
+            <ShieldCheck className="w-12 h-12 text-green-700" />
           </div>
         </div>
-        <h2 className="text-3xl font-bold text-center text-gray-800 mb-2">Vision 2035</h2>
+        <h2 className="text-3xl font-bold text-center text-gray-800 mb-2">Tokana ID</h2>
         <p className="text-center text-gray-500 mb-8">Système National de l'État Civil</p>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Identifiant</label>
-            <input type="text" className="w-full border border-gray-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500" value={username} onChange={(e) => setUsername(e.target.value)} required />
+            <input type="text" className="w-full border border-gray-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-green-500" value={username} onChange={(e) => setUsername(e.target.value)} required />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Mot de passe</label>
-            <input type="password" className="w-full border border-gray-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <input type="password" className="w-full border border-gray-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-green-500" value={password} onChange={(e) => setPassword(e.target.value)} required />
           </div>
           {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-          <button type="submit" disabled={loading} className="w-full py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-colors disabled:opacity-50">
+          <button type="submit" disabled={loading} className="w-full py-3 bg-green-700 text-white rounded-lg font-bold hover:bg-green-800 transition-colors disabled:opacity-50">
             {loading ? 'Connexion...' : 'Se connecter'}
           </button>
         </form>
+        <p className="mt-8 text-center text-sm text-gray-600">
+          Pas encore de compte ?{' '}
+          <button onClick={onToggleRegister} className="text-green-700 font-bold hover:underline">S'inscrire</button>
+        </p>
+      </div>
+    </div>
+  );
+};
+
+// --- REGISTER COMPONENT ---
+const Register = ({ onToggleLogin }) => {
+  const [form, setForm] = useState({ username: '', password: '', role: 'CITOYEN', id_localite: '' });
+  const [localites, setLocalites] = useState([]);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    api.get('/localites').then(res => setLocalites(res.data)).catch(console.error);
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      await api.post('/auth/register', form);
+      setSuccess(true);
+      setTimeout(onToggleLogin, 2000);
+    } catch (err) {
+      setError('Erreur lors de l’inscription. L’identifiant est peut-être déjà pris.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (success) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
+          <div className="text-green-500 mb-4 flex justify-center"><ShieldCheck size={48} /></div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Inscription Réussie !</h2>
+          <p className="text-gray-600">Redirection vers la page de connexion...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+        <h2 className="text-3xl font-bold text-center text-gray-800 mb-2">Créer un compte</h2>
+        <p className="text-center text-gray-500 mb-8">Rejoignez le Système National de l'État Civil</p>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Identifiant</label>
+            <input type="text" className="w-full border rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-green-500" value={form.username} onChange={e => setForm({...form, username: e.target.value})} required />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
+            <input type="password" className="w-full border rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-green-500" value={form.password} onChange={e => setForm({...form, password: e.target.value})} required />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Type de compte</label>
+            <select className="w-full border rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-green-500" value={form.role} onChange={e => setForm({...form, role: e.target.value})}>
+              <option value="CITOYEN">Citoyen</option>
+              <option value="OFFICIER">Officier d'État Civil</option>
+              <option value="ADMIN">Administrateur Local</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Commune / Localité</label>
+            <select className="w-full border rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-green-500" value={form.id_localite} onChange={e => setForm({...form, id_localite: e.target.value})} required>
+              <option value="">Sélectionnez votre commune</option>
+              {localites.map(l => <option key={l.id_localite} value={l.id_localite}>{l.nom_commune} ({l.district})</option>)}
+            </select>
+          </div>
+          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+          <button type="submit" disabled={loading} className="w-full py-3 bg-green-700 text-white rounded-lg font-bold hover:bg-green-800 transition-colors disabled:opacity-50">
+            {loading ? 'Inscription...' : 'Créer mon compte'}
+          </button>
+        </form>
+        <p className="mt-8 text-center text-sm text-gray-600">
+          Déjà un compte ?{' '}
+          <button onClick={onToggleLogin} className="text-green-700 font-bold hover:underline">Se connecter</button>
+        </p>
       </div>
     </div>
   );
@@ -64,8 +153,13 @@ const Localites = ({ user }) => {
 
   const fetchList = async () => {
     try {
-      const regionParam = user?.role?.toUpperCase() === 'AGENT' ? `?region=${user.region}` : '';
-      const res = await api.get(`/localites${regionParam}`);
+      const params = new URLSearchParams();
+      if (user?.id_localite) {
+        params.append('id_localite', user.id_localite);
+      } else if (user?.role?.toUpperCase() === 'AGENT' && user.region) {
+        params.append('region', user.region);
+      }
+      const res = await api.get(`/localites?${params.toString()}`);
       setList(res.data);
     } catch (e) { console.error(e); }
   };
@@ -102,7 +196,7 @@ const Localites = ({ user }) => {
     <div className="space-y-6">
       <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border">
         <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-          {editingId ? <Pencil className="w-5 h-5 text-blue-600" /> : <Plus className="w-5 h-5 text-blue-600" />}
+          {editingId ? <Pencil className="w-5 h-5 text-green-700" /> : <Plus className="w-5 h-5 text-green-700" />}
           {editingId ? 'Modifier Localité' : 'Ajouter Localité'}
         </h3>
         <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
@@ -111,7 +205,7 @@ const Localites = ({ user }) => {
           <input placeholder="Région" value={form.region} onChange={e => setForm({...form, region: e.target.value})} required className="border p-2 rounded-lg text-sm" />
           <input placeholder="CP" value={form.code_postal} onChange={e => setForm({...form, code_postal: e.target.value})} required className="border p-2 rounded-lg text-sm" />
           <div className="flex gap-2 sm:col-span-2 md:col-span-1">
-            <button type="submit" className="bg-blue-600 text-white p-2 rounded-lg font-bold flex-1 text-sm">Valider</button>
+            <button type="submit" className="bg-green-700 text-white p-2 rounded-lg font-bold flex-1 text-sm">Valider</button>
             {editingId && <button type="button" onClick={() => {setEditingId(null); setForm({nom_commune:'',district:'',region:'',code_postal:''})}} className="bg-gray-200 p-2 rounded-lg font-bold flex-1 text-sm">X</button>}
           </div>
         </form>
@@ -135,7 +229,7 @@ const Localites = ({ user }) => {
                   <td className="p-4 text-sm">{l.region}</td>
                   <td className="p-4 text-right">
                     <div className="flex justify-end gap-2">
-                      <button onClick={() => startEdit(l)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Pencil size={18}/></button>
+                      <button onClick={() => startEdit(l)} className="p-1.5 text-green-700 hover:bg-green-50 rounded-lg transition-colors"><Pencil size={18}/></button>
                       <button onClick={() => del(l.id_localite)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={18}/></button>
                     </div>
                   </td>
@@ -153,22 +247,51 @@ const Localites = ({ user }) => {
 const Citoyens = ({ user }) => {
   const [list, setList] = useState([]);
   const [search, setSearch] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
+  const [lieux, setLieux] = useState([]); // Remplacement du trie
   const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState({ nom: '', prenom: '', date_naissance: '', lieu_naissance: '', est_vivant: true, sexe: 'M', numero_cin: '' });
+  const [form, setForm] = useState({ 
+    nom: '', 
+    prenom: '', 
+    date_naissance: '', 
+    lieu_naissance: '', 
+    est_vivant: true, 
+    sexe: 'M', 
+    numero_cin: '',
+    id_localite: user?.id_localite || null
+  });
 
   const fetchList = async (q = '') => {
     try {
       const params = new URLSearchParams();
       if (q) params.append('search', q);
-      if (user?.role?.toUpperCase() === 'AGENT' && user.region) {
+      
+      // Filtrage par localité si l'utilisateur y est rattaché
+      if (user?.id_localite) {
+        params.append('id_localite', user.id_localite);
+      } else if (user?.role?.toUpperCase() === 'AGENT' && user.region) {
         params.append('region', user.region);
       }
+      
       const res = await api.get(`/citoyens?${params.toString()}`);
       setList(res.data);
+      // Extraire les lieux uniques
+      const uniqueLieux = [...new Set(res.data.map(c => c.lieu_naissance).filter(l => l))];
+      setLieux(uniqueLieux);
     } catch (e) { console.error(e); }
   };
 
   useEffect(() => { fetchList(); }, [user]);
+
+  const handleLieuChange = (text) => {
+    setForm({...form, lieu_naissance: text});
+    if (text.length > 0) {
+        const filtered = lieux.filter(l => l.toLowerCase().startsWith(text.toLowerCase()));
+        setSuggestions(filtered);
+    } else {
+        setSuggestions([]);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -177,9 +300,22 @@ const Citoyens = ({ user }) => {
         await api.put(`/citoyens/${editingId}`, form);
       } else {
         await api.post('/citoyens', form);
+        // Mise à jour locale des suggestions
+        if(form.lieu_naissance && !lieux.includes(form.lieu_naissance)) {
+            setLieux([...lieux, form.lieu_naissance]);
+        }
       }
       setEditingId(null);
-      setForm({ nom: '', prenom: '', date_naissance: '', lieu_naissance: '', est_vivant: true, sexe: 'M', numero_cin: '' });
+      setForm({ 
+        nom: '', 
+        prenom: '', 
+        date_naissance: '', 
+        lieu_naissance: '', 
+        est_vivant: true, 
+        sexe: 'M', 
+        numero_cin: '',
+        id_localite: user?.id_localite || null
+      });
       fetchList();
     } catch (e) { console.error(e); }
   };
@@ -191,39 +327,53 @@ const Citoyens = ({ user }) => {
     }
   };
 
+  const canEdit = user?.role?.toUpperCase() !== 'CITOYEN';
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <input className="w-full border pl-10 p-2 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm" placeholder="Rechercher par NOM..." value={search} onChange={e => setSearch(e.target.value)} />
+          <input className="w-full border pl-10 p-2 rounded-xl outline-none focus:ring-2 focus:ring-green-500 text-sm" placeholder="Rechercher par NOM..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
-        <button onClick={() => fetchList(search)} className="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold text-sm shadow-md hover:bg-blue-700 transition-all">Chercher</button>
+        <button onClick={() => fetchList(search)} className="bg-green-700 text-white px-6 py-2 rounded-xl font-bold text-sm shadow-md hover:bg-green-800 transition-all">Chercher</button>
       </div>
-      <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border">
-        <h3 className="font-bold mb-4 flex items-center gap-2">
-          {editingId ? <Pencil className="w-5 h-5 text-blue-600" /> : <Plus className="w-5 h-5 text-blue-600" />}
-          {editingId ? 'Modifier Citoyen' : 'Nouveau Citoyen'}
-        </h3>
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <input placeholder="NOM" value={form.nom} onChange={e => setForm({...form, nom: e.target.value.toUpperCase()})} required className="border p-2 rounded-lg text-sm" />
-          <input placeholder="Prénom" value={form.prenom} onChange={e => setForm({...form, prenom: e.target.value})} required className="border p-2 rounded-lg text-sm" />
-          <input type="date" value={form.date_naissance} onChange={e => setForm({...form, date_naissance: e.target.value})} required className="border p-2 rounded-lg text-sm" />
-          <input placeholder="CIN" value={form.numero_cin} onChange={e => setForm({...form, numero_cin: e.target.value})} required className="border p-2 rounded-lg text-sm" />
-          <select value={form.sexe} onChange={e => setForm({...form, sexe: e.target.value})} className="border p-2 rounded-lg text-sm font-medium">
-            <option value="M">Masculin</option>
-            <option value="F">Féminin</option>
-          </select>
-          <div className="flex items-center gap-2 border p-2 rounded-lg">
-            <input type="checkbox" className="w-4 h-4 rounded text-blue-600" checked={form.est_vivant} onChange={e => setForm({...form, est_vivant: e.target.checked})} id="isVivant" />
-            <label htmlFor="isVivant" className="text-xs font-bold uppercase tracking-wider text-gray-600">Vivant</label>
-          </div>
-          <div className="flex gap-2 sm:col-span-2">
-            <button type="submit" className="bg-blue-600 text-white p-2 rounded-lg font-bold flex-1 text-sm shadow-sm">Enregistrer</button>
-            {editingId && <button type="button" onClick={() => {setEditingId(null); setForm({nom:'',prenom:'',date_naissance:'',lieu_naissance:'',est_vivant:true,sexe:'M',numero_cin:''})}} className="bg-gray-200 p-2 rounded-lg font-bold flex-1 text-gray-700 text-sm">Annuler</button>}
-          </div>
-        </form>
-      </div>
+      {canEdit && (
+        <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border">
+          <h3 className="font-bold mb-4 flex items-center gap-2">
+            {editingId ? <Pencil className="w-5 h-5 text-green-700" /> : <Plus className="w-5 h-5 text-green-700" />}
+            {editingId ? 'Modifier Citoyen' : 'Nouveau Citoyen'}
+          </h3>
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <input placeholder="NOM" value={form.nom} onChange={e => setForm({...form, nom: e.target.value.toUpperCase()})} required className="border p-2 rounded-lg text-sm" />
+            <input placeholder="Prénom" value={form.prenom} onChange={e => setForm({...form, prenom: e.target.value})} required className="border p-2 rounded-lg text-sm" />
+            <input type="date" value={form.date_naissance} onChange={e => setForm({...form, date_naissance: e.target.value})} required className="border p-2 rounded-lg text-sm" />
+            <div className="relative">
+              <input placeholder="Lieu de naissance" value={form.lieu_naissance} onChange={e => handleLieuChange(e.target.value)} required className="border p-2 rounded-lg text-sm w-full" />
+              {suggestions.length > 0 && (
+                  <div className="absolute z-10 bg-white border border-gray-300 w-full mt-1 rounded shadow-lg">
+                      {suggestions.map((s, i) => (
+                          <div key={i} className="p-2 cursor-pointer hover:bg-green-100" onClick={() => {setForm({...form, lieu_naissance: s}); setSuggestions([]);}}>{s}</div>
+                      ))}
+                  </div>
+              )}
+            </div>
+            <input placeholder="CIN" value={form.numero_cin} onChange={e => setForm({...form, numero_cin: e.target.value})} required className="border p-2 rounded-lg text-sm" />
+            <select value={form.sexe} onChange={e => setForm({...form, sexe: e.target.value})} className="border p-2 rounded-lg text-sm font-medium">
+              <option value="M">Masculin</option>
+              <option value="F">Féminin</option>
+            </select>
+            <div className="flex items-center gap-2 border p-2 rounded-lg">
+              <input type="checkbox" className="w-4 h-4 rounded text-green-700" checked={form.est_vivant} onChange={e => setForm({...form, est_vivant: e.target.checked})} id="isVivant" />
+              <label htmlFor="isVivant" className="text-xs font-bold uppercase tracking-wider text-gray-600">Vivant</label>
+            </div>
+            <div className="flex gap-2 sm:col-span-2">
+              <button type="submit" className="bg-green-700 text-white p-2 rounded-lg font-bold flex-1 text-sm shadow-sm">Enregistrer</button>
+              {editingId && <button type="button" onClick={() => {setEditingId(null); setForm({nom:'',prenom:'',date_naissance:'',lieu_naissance:'',est_vivant:true,sexe:'M',numero_cin:''})}} className="bg-gray-200 p-2 rounded-lg font-bold flex-1 text-gray-700 text-sm">Annuler</button>}
+            </div>
+          </form>
+        </div>
+      )}
       <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left min-w-[700px]">
@@ -232,7 +382,7 @@ const Citoyens = ({ user }) => {
                 <th className="p-4 text-xs font-bold uppercase tracking-wider">Nom complet</th>
                 <th className="p-4 text-xs font-bold uppercase tracking-wider">CIN</th>
                 <th className="p-4 text-xs font-bold uppercase tracking-wider text-center">Statut</th>
-                <th className="p-4 text-xs font-bold uppercase tracking-wider text-right">Actions</th>
+                {canEdit && <th className="p-4 text-xs font-bold uppercase tracking-wider text-right">Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -248,12 +398,14 @@ const Citoyens = ({ user }) => {
                       {c.est_vivant ? 'VIVANT' : 'DÉCÉDÉ'}
                     </span>
                   </td>
-                  <td className="p-4 text-right">
-                    <div className="flex justify-end gap-2">
-                      <button onClick={() => {setEditingId(c.id_citoyen); setForm(c)}} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Pencil size={18}/></button>
-                      <button onClick={() => del(c.id_citoyen)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={18}/></button>
-                    </div>
-                  </td>
+                  {canEdit && (
+                    <td className="p-4 text-right">
+                      <div className="flex justify-end gap-2">
+                        <button onClick={() => {setEditingId(c.id_citoyen); setForm(c)}} className="p-1.5 text-green-700 hover:bg-green-50 rounded-lg transition-colors"><Pencil size={18}/></button>
+                        <button onClick={() => del(c.id_citoyen)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={18}/></button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -272,8 +424,13 @@ const Actes = ({ user }) => {
 
   const fetchList = async () => {
     try {
-      const regionParam = user?.role?.toUpperCase() === 'AGENT' && user.region ? `?region=${user.region}` : '';
-      const res = await api.get(`/actes${regionParam}`);
+      const params = new URLSearchParams();
+      if (user?.id_localite) {
+        params.append('id_localite', user.id_localite);
+      } else if (user?.role?.toUpperCase() === 'AGENT' && user.region) {
+        params.append('region', user.region);
+      }
+      const res = await api.get(`/actes?${params.toString()}`);
       setList(res.data);
     } catch (e) { console.error(e); }
   };
@@ -302,28 +459,32 @@ const Actes = ({ user }) => {
     }
   };
 
+  const canEdit = user?.role?.toUpperCase() !== 'CITOYEN';
+
   return (
     <div className="space-y-6">
-      <div className="bg-white p-4 md:p-6 rounded-xl border shadow-sm">
-        <h3 className="font-bold mb-4 flex items-center gap-2">
-          <FileText className="w-5 h-5 text-blue-600" />
-          {editingId ? 'Modifier Acte' : 'Indexer un Acte'}
-        </h3>
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <select value={form.type_acte} onChange={e => setForm({...form, type_acte: e.target.value})} className="border p-2 rounded-lg font-bold text-sm">
-            <option value="NAISSANCE">NAISSANCE</option>
-            <option value="DECES">DECES</option>
-            <option value="MARIAGE">MARIAGE</option>
-          </select>
-          <input type="date" value={form.date_acte} onChange={e => setForm({...form, date_acte: e.target.value})} required className="border p-2 rounded-lg text-sm" />
-          <input placeholder="N° Registre" value={form.numero_registre} onChange={e => setForm({...form, numero_registre: e.target.value})} required className="border p-2 rounded-lg text-sm" />
-          <input placeholder="ID Citoyen" value={form.id_citoyen} onChange={e => setForm({...form, id_citoyen: e.target.value})} required className="border p-2 rounded-lg text-sm" />
-          <div className="flex gap-2 sm:col-span-2 md:col-span-1">
-            <button type="submit" className="bg-blue-600 text-white p-2 rounded-lg font-bold flex-1 shadow-md hover:bg-blue-700 text-sm">Indexer</button>
-            {editingId && <button type="button" onClick={() => {setEditingId(null); setForm({type_acte:'NAISSANCE',date_acte:'',numero_registre:'',id_citoyen:''})}} className="bg-gray-200 p-2 rounded-lg font-bold flex-1 text-gray-700 text-sm">Annuler</button>}
-          </div>
-        </form>
-      </div>
+      {canEdit && (
+        <div className="bg-white p-4 md:p-6 rounded-xl border shadow-sm">
+          <h3 className="font-bold mb-4 flex items-center gap-2">
+            <FileText className="w-5 h-5 text-green-700" />
+            {editingId ? 'Modifier Acte' : 'Indexer un Acte'}
+          </h3>
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <select value={form.type_acte} onChange={e => setForm({...form, type_acte: e.target.value})} className="border p-2 rounded-lg font-bold text-sm">
+              <option value="NAISSANCE">NAISSANCE</option>
+              <option value="DECES">DECES</option>
+              <option value="MARIAGE">MARIAGE</option>
+            </select>
+            <input type="date" value={form.date_acte} onChange={e => setForm({...form, date_acte: e.target.value})} required className="border p-2 rounded-lg text-sm" />
+            <input placeholder="N° Registre" value={form.numero_registre} onChange={e => setForm({...form, numero_registre: e.target.value})} required className="border p-2 rounded-lg text-sm" />
+            <input placeholder="ID Citoyen" value={form.id_citoyen} onChange={e => setForm({...form, id_citoyen: e.target.value})} required className="border p-2 rounded-lg text-sm" />
+            <div className="flex gap-2 sm:col-span-2 md:col-span-1">
+              <button type="submit" className="bg-green-700 text-white p-2 rounded-lg font-bold flex-1 shadow-md hover:bg-green-800 text-sm">Indexer</button>
+              {editingId && <button type="button" onClick={() => {setEditingId(null); setForm({type_acte:'NAISSANCE',date_acte:'',numero_registre:'',id_citoyen:''})}} className="bg-gray-200 p-2 rounded-lg font-bold flex-1 text-gray-700 text-sm">Annuler</button>}
+            </div>
+          </form>
+        </div>
+      )}
       <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left min-w-[600px]">
@@ -331,7 +492,7 @@ const Actes = ({ user }) => {
               <tr>
                 <th className="p-4 text-xs font-bold uppercase tracking-wider">Type Officiel</th>
                 <th className="p-4 text-xs font-bold uppercase tracking-wider text-center">Exportation</th>
-                <th className="p-4 text-xs font-bold uppercase tracking-wider text-right">Actions</th>
+                {canEdit && <th className="p-4 text-xs font-bold uppercase tracking-wider text-right">Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -342,16 +503,18 @@ const Actes = ({ user }) => {
                     <div className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{a.date_acte} • {a.numero_registre}</div>
                   </td>
                   <td className="p-4 text-center">
-                    <button onClick={() => window.open(`/api/actes/${a.id_acte}/pdf`, '_blank')} className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-1.5 rounded-full font-black text-[10px] uppercase hover:bg-blue-600 hover:text-white transition-all border border-blue-100">
+                    <button onClick={() => window.open(`/api/actes/${a.id_acte}/pdf`, '_blank')} className="inline-flex items-center gap-2 bg-green-50 text-green-700 px-4 py-1.5 rounded-full font-black text-[10px] uppercase hover:bg-green-700 hover:text-white transition-all border border-green-100">
                       <Download className="w-3 h-3" /> PDF
                     </button>
                   </td>
-                  <td className="p-4 text-right">
-                    <div className="flex justify-end gap-2">
-                      <button onClick={() => {setEditingId(a.id_acte); setForm(a)}} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Pencil size={18}/></button>
-                      <button onClick={() => del(a.id_acte)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={18}/></button>
-                    </div>
-                  </td>
+                  {canEdit && (
+                    <td className="p-4 text-right">
+                      <div className="flex justify-end gap-2">
+                        <button onClick={() => {setEditingId(a.id_acte); setForm(a)}} className="p-1.5 text-green-700 hover:bg-green-50 rounded-lg transition-colors"><Pencil size={18}/></button>
+                        <button onClick={() => del(a.id_acte)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={18}/></button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -426,7 +589,7 @@ const MyAccount = ({ user }) => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-blue-600 p-8 rounded-2xl shadow-lg text-white flex flex-col md:flex-row justify-between items-center gap-6">
+      <div className="bg-green-700 p-8 rounded-2xl shadow-lg text-white flex flex-col md:flex-row justify-between items-center gap-6">
         <div className="flex items-center gap-6">
           <div className="bg-white/20 p-1 rounded-full border border-white/30 backdrop-blur-md overflow-hidden w-24 h-24 flex items-center justify-center">
             {profile.photo ? (
@@ -437,12 +600,12 @@ const MyAccount = ({ user }) => {
           </div>
           <div>
             <h3 className="text-3xl font-bold uppercase tracking-tight">{profile.nom || user.username}</h3>
-            <p className="text-blue-200 font-bold uppercase text-[10px] tracking-widest">{profile.role || user.role} • ID: {user.id_citoyen || 'Non lié'}</p>
+            <p className="text-green-200 font-bold uppercase text-[10px] tracking-widest">{profile.role || user.role} • ID: {user.id_citoyen || 'Non lié'}</p>
           </div>
         </div>
         <button 
           onClick={() => setIsEditing(!isEditing)}
-          className="bg-white text-blue-600 px-6 py-2 rounded-xl font-bold hover:bg-blue-50 transition-colors flex items-center gap-2"
+          className="bg-white text-green-700 px-6 py-2 rounded-xl font-bold hover:bg-green-50 transition-colors flex items-center gap-2"
         >
           <Pencil size={18} /> {isEditing ? 'Annuler' : 'Modifier Profil'}
         </button>
@@ -464,7 +627,7 @@ const MyAccount = ({ user }) => {
                 type="file" 
                 accept="image/*"
                 onChange={handlePhotoChange}
-                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-800 hover:file:bg-green-100"
               />
             </div>
             <div>
@@ -472,7 +635,7 @@ const MyAccount = ({ user }) => {
               <input 
                 value={profile.nom} 
                 onChange={e => setProfile({...profile, nom: e.target.value})}
-                className="w-full border rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-green-500"
                 required
               />
             </div>
@@ -482,14 +645,14 @@ const MyAccount = ({ user }) => {
                 type="text"
                 value={profile.mot_de_passe} 
                 onChange={e => setProfile({...profile, mot_de_passe: e.target.value})}
-                className="w-full border rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-green-500"
                 required
               />
             </div>
             <button 
               type="submit" 
               disabled={loading}
-              className="bg-blue-600 text-white px-8 py-2 rounded-xl font-bold hover:bg-blue-700 disabled:opacity-50"
+              className="bg-green-700 text-white px-8 py-2 rounded-xl font-bold hover:bg-green-800 disabled:opacity-50"
             >
               {loading ? 'Enregistrement...' : 'Sauvegarder les modifications'}
             </button>
@@ -510,7 +673,7 @@ const MyAccount = ({ user }) => {
               </div>
               <div>
                 <p className="text-[10px] font-black text-gray-400 uppercase">Rôle Système</p>
-                <span className="inline-block bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-[10px] font-black uppercase mt-1">
+                <span className="inline-block bg-green-50 text-green-700 px-3 py-1 rounded-full text-[10px] font-black uppercase mt-1">
                   {profile.role}
                 </span>
               </div>
@@ -522,9 +685,9 @@ const MyAccount = ({ user }) => {
             {myActes.length > 0 ? (
               <div className="space-y-3">
                 {myActes.map(a => (
-                  <div key={a.id_acte} className="p-4 border rounded-xl flex justify-between items-center bg-gray-50 hover:bg-blue-50 transition-colors">
+                  <div key={a.id_acte} className="p-4 border rounded-xl flex justify-between items-center bg-gray-50 hover:bg-green-50 transition-colors">
                     <div><p className="font-bold text-gray-900">{a.type_acte}</p><p className="text-xs text-gray-500">{a.date_acte} • Registre {a.numero_registre}</p></div>
-                    <button onClick={() => window.open(`/api/actes/${a.id_acte}/pdf`, '_blank')} className="bg-white p-2 rounded-lg text-blue-600 shadow-sm border border-blue-100 hover:bg-blue-600 hover:text-white transition-all"><Download size={20}/></button>
+                    <button onClick={() => window.open(`/api/actes/${a.id_acte}/pdf`, '_blank')} className="bg-white p-2 rounded-lg text-green-700 shadow-sm border border-green-100 hover:bg-green-700 hover:text-white transition-all"><Download size={20}/></button>
                   </div>
                 ))}
               </div>
@@ -539,9 +702,11 @@ const MyAccount = ({ user }) => {
 // --- MAIN APPLICATION ---
 const App = () => {
   const [user, setUser] = useState(null);
+  const [isRegistering, setIsRegistering] = useState(false);
   const [activeTab, setActiveTab] = useState('');
   const [isSidebarOpen, setSidebarOpen] = useState(window.innerWidth > 1024);
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
 
   // Auto-close mobile menu on tab change
   useEffect(() => {
@@ -580,14 +745,26 @@ const App = () => {
     }
   }, [user, allowedItems, activeTab]);
 
-  if (!user) return <Login onLogin={setUser} />;
+  if (!user) {
+    if (showLogin) {
+      if (isRegistering) {
+        return <Register onToggleLogin={() => setIsRegistering(false)} />;
+      }
+      return <Login onLogin={setUser} onToggleRegister={() => setIsRegistering(true)} />;
+    }
+    return <Landing onGetStarted={() => setShowLogin(true)} />;
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-50 font-sans text-gray-900 overflow-x-hidden">
       {/* MOBILE HEADER */}
       <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b z-[60] flex items-center justify-between px-4">
-        <span className="font-black text-xl text-blue-600 italic tracking-tighter">VISION 2035</span>
-        <button onClick={() => setMobileMenuOpen(!isMobileMenuOpen)} className="p-2 text-blue-600 bg-blue-50 rounded-lg">
+        <div className="flex items-center gap-2">
+            <span className="font-black text-xl text-slate-900 tracking-tight">
+              TOKANA<span className="text-[#FC3D21]">ID</span>
+            </span>
+        </div>
+        <button onClick={() => setMobileMenuOpen(!isMobileMenuOpen)} className="p-2 text-[#007A33] bg-[#007A33]/10 rounded-lg">
           {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>
@@ -602,19 +779,23 @@ const App = () => {
 
       {/* NAVIGATION SIDEBAR */}
       <aside className={`
-        fixed inset-y-0 left-0 z-[70] bg-white border-r border-gray-200 flex flex-col transition-all duration-300 shadow-xl
+        fixed inset-y-0 left-0 z-[70] bg-white border-r border-slate-100 flex flex-col transition-all duration-300 shadow-xl
         ${isMobileMenuOpen ? 'translate-x-0 w-64' : '-translate-x-full lg:translate-x-0'}
         ${isSidebarOpen ? 'lg:w-64' : 'lg:w-20'}
       `}>
-        <div className="p-6 hidden lg:flex items-center justify-between border-b">
-          {isSidebarOpen && <span className="font-black text-2xl text-blue-600 tracking-tighter italic">VISION 2035</span>}
-          <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="p-1 text-blue-600 hover:bg-blue-50 rounded-lg">
+        <div className="p-6 hidden lg:flex items-center justify-between border-b border-slate-100">
+          {isSidebarOpen && (
+            <span className="font-black text-xl text-slate-900 tracking-tight">
+              TOKANA<span className="text-[#FC3D21]">ID</span>
+            </span>
+          )}
+          <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="p-1 text-[#007A33] hover:bg-[#007A33]/10 rounded-lg transition-colors">
             {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
         
-        <div className="lg:hidden p-6 border-b flex justify-between items-center">
-          <span className="font-black text-xl text-blue-600 italic">MENU</span>
+        <div className="lg:hidden p-6 border-b border-slate-100 flex justify-between items-center">
+          <span className="font-black text-xl text-slate-900">MENU</span>
           <button onClick={() => setMobileMenuOpen(false)}><X size={20}/></button>
         </div>
 
@@ -623,7 +804,7 @@ const App = () => {
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl w-full transition-all font-bold ${activeTab === item.id ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:bg-blue-50'}`}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl w-full transition-all font-bold ${activeTab === item.id ? 'bg-[#007A33] text-white shadow-lg shadow-[#007A33]/20' : 'text-slate-500 hover:bg-slate-50'}`}
             >
               <item.icon size={20} className="shrink-0" />
               {(isSidebarOpen || isMobileMenuOpen) && <span className="text-sm uppercase tracking-wider truncate">{item.label}</span>}
@@ -631,21 +812,21 @@ const App = () => {
           ))}
         </nav>
 
-        <div className="p-4 border-t space-y-4">
+        <div className="p-4 border-t border-slate-100 space-y-4">
           <div className={`flex items-center gap-3 ${(isSidebarOpen || isMobileMenuOpen) ? 'px-4' : 'justify-center'} py-2`}>
-            <div className="bg-blue-100 p-2 rounded-full shadow-sm shrink-0">
-              <UserIcon size={20} className="text-blue-600" />
+            <div className="bg-[#007A33]/10 p-2 rounded-full shadow-sm shrink-0">
+              <UserIcon size={20} className="text-[#007A33]" />
             </div>
             {(isSidebarOpen || isMobileMenuOpen) && (
               <div className="overflow-hidden">
-                <p className="text-sm font-black truncate text-gray-900 uppercase">{user.username}</p>
-                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-none mt-1 truncate">{role}</p>
+                <p className="text-sm font-black truncate text-slate-900 uppercase">{user.username}</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-none mt-1 truncate">{role}</p>
               </div>
             )}
           </div>
           <button 
             onClick={() => { if (window.confirm("Voulez-vous vraiment vous déconnecter ?")) setUser(null); }}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl w-full text-red-600 hover:bg-red-50 transition-all font-bold ${(isSidebarOpen || isMobileMenuOpen) ? '' : 'justify-center'}`}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl w-full text-[#FC3D21] hover:bg-[#FC3D21]/5 transition-all font-bold ${(isSidebarOpen || isMobileMenuOpen) ? '' : 'justify-center'}`}
           >
             <LogOut size={20} className="shrink-0" />
             {(isSidebarOpen || isMobileMenuOpen) && <span className="text-sm uppercase tracking-wider">Déconnexion</span>}
@@ -668,7 +849,11 @@ const App = () => {
           </header>
           
           <div className="animate-in fade-in duration-700">
-            {activeTab === 'home' && <Home user={user} setActiveTab={setActiveTab} />}
+            {activeTab === 'home' && (
+              role === 'CITOYEN' 
+                ? <Home user={user} setActiveTab={setActiveTab} />
+                : <LegacyHome user={user} setActiveTab={setActiveTab} />
+            )}
             {activeTab === 'localites' && <Localites user={user} />}
             {activeTab === 'citoyens' && <Citoyens user={user} />}
             {activeTab === 'actes' && <Actes user={user} />}

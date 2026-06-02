@@ -6,8 +6,9 @@ class Node:
         self.right = None
         self.height = 1
 
+
 class AVLTree:
-    def get_height(self, node):
+    def get_height(self, node):  # hauteur node
         if not node:
             return 0
         return node.height

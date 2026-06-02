@@ -1,7 +1,7 @@
 {
   "name": "frontend",
   "version": "1.0.0",
-  "description": "Vision 2035 - État Civil Frontend",
+  "description": "Tokana ID - État Civil Frontend",
   "private": true,
   "type": "module",
   "scripts": {

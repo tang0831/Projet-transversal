@@ -2,18 +2,18 @@ import io
 from datetime import datetime
 from typing import List, Optional
 
-from backend.models.acte import Acte
-from backend.models.citoyen import Citoyen
-from backend.models.localite import Localite
-from backend.models.utilisateur import Utilisateur
-from backend.utils.pdf_generator import generate_acte_pdf
 from fastapi import Depends, FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from backend.models.forum import ForumModel, DemandeActeModel
+from backend.models.acte import Acte
+from backend.models.citoyen import Citoyen
+from backend.models.forum import DemandeActeModel, ForumModel
+from backend.models.localite import Localite
+from backend.models.utilisateur import Utilisateur
+from backend.utils.pdf_generator import generate_acte_pdf
 
-app = FastAPI(title="Vision 2035 - État Civil API")
+app = FastAPI(title="Tokana ID - État Civil API")
 
 # Configure CORS
 app.add_middleware(
@@ -30,12 +30,15 @@ class MessageCreate(BaseModel):
     id_utilisateur: int
     contenu: str
 
+
 class DemandeCreate(BaseModel):
     id_utilisateur: int
     type_acte: str
 
+
 class StatutUpdate(BaseModel):
     statut: str
+
 
 class UserUpdate(BaseModel):
     nom: str
@@ -43,6 +46,7 @@ class UserUpdate(BaseModel):
     role: str
     id_localite: Optional[int] = None
     photo: Optional[str] = None
+
 
 class LoginRequest(BaseModel):
     username: str
@@ -91,6 +95,7 @@ class ActeOut(BaseModel):
 
 
 from backend.structures.boyer_moore import boyer_moore_search
+
 
 # --- AUTH ---
 @app.post("/auth/login")
@@ -211,7 +216,7 @@ def get_citoyens(search: Optional[str] = None, region: Optional[str] = None):
         res = cit_model.lister_par_region(region)
     else:
         res = cit_model.lister_tout()
-        
+
     all_citoyens = [
         {
             "id_citoyen": r[0],
@@ -286,7 +291,7 @@ def get_actes(region: Optional[str] = None):
         res = acte_model.lister_par_region(region)
     else:
         res = acte_model.lister_tout()
-        
+
     return [
         {
             "id_acte": r[0],
@@ -360,6 +365,7 @@ if __name__ == "__main__":
 
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
+
 # --- FORUM & DEMANDES ---
 @app.get("/forum/messages")
 def get_forum_messages():
@@ -371,16 +377,18 @@ def get_forum_messages():
             "contenu": r[1],
             "date_envoi": str(r[2]),
             "username": r[3],
-            "role": r[4]
+            "role": r[4],
         }
         for r in res
     ]
+
 
 @app.post("/forum/messages")
 def post_forum_message(msg: MessageCreate):
     model = ForumModel()
     model.ajouter_message(msg.id_utilisateur, msg.contenu)
     return {"message": "Message envoyé"}
+
 
 @app.get("/demandes")
 def get_demandes(id_utilisateur: Optional[int] = None):
@@ -393,7 +401,7 @@ def get_demandes(id_utilisateur: Optional[int] = None):
                 "id_utilisateur": r[1],
                 "type_acte": r[2],
                 "statut": r[3],
-                "date_demande": str(r[4])
+                "date_demande": str(r[4]),
             }
             for r in res
         ]
@@ -405,10 +413,11 @@ def get_demandes(id_utilisateur: Optional[int] = None):
                 "type_acte": r[1],
                 "statut": r[2],
                 "date_demande": str(r[3]),
-                "username": r[4]
+                "username": r[4],
             }
             for r in res
         ]
+
 
 @app.post("/demandes")
 def create_demande(dem: DemandeCreate):
@@ -416,11 +425,13 @@ def create_demande(dem: DemandeCreate):
     model.creer_demande(dem.id_utilisateur, dem.type_acte)
     return {"message": "Demande créée"}
 
+
 @app.put("/demandes/{id_demande}")
 def update_demande_statut(id_demande: int, status: StatutUpdate):
     model = DemandeActeModel()
     model.mettre_a_jour_statut(id_demande, status.statut)
     return {"message": "Statut mis à jour"}
+
 
 # --- USER PROFILE ---
 @app.get("/users/{id_utilisateur}")
@@ -434,15 +445,18 @@ def get_user_profile(id_utilisateur: int):
             "mot_de_passe": user[2],
             "role": user[3],
             "id_localite": user[4],
-            "photo": user[5] if len(user) > 5 else None
+            "photo": user[5] if len(user) > 5 else None,
         }
     raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+
 
 @app.put("/users/{id_utilisateur}")
 def update_user_profile(id_utilisateur: int, u: UserUpdate):
     try:
         model = Utilisateur()
-        model.modifier_utilisateur(id_utilisateur, u.nom, u.mot_de_passe, u.role, u.id_localite, u.photo)
+        model.modifier_utilisateur(
+            id_utilisateur, u.nom, u.mot_de_passe, u.role, u.id_localite, u.photo
+        )
         return {"message": "Profil mis à jour"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

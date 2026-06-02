@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 export default function App() {
   return (
     <View style={styles.container}>
-      <Text>Vision 2035 - Mobile</Text>
+      <Text>Tokana ID - Mobile</Text>
     </View>
   );
 }

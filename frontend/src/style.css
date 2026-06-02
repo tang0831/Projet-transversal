@@ -4,11 +4,11 @@
 
 @layer base {
   input[type="text"], input[type="password"], input[type="date"], select {
-    @apply border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all;
+    @apply border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all;
   }
   
   button.primary {
-    @apply bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2;
+    @apply bg-green-700 hover:bg-green-800 text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2;
   }
 
   button.secondary {
@@ -21,9 +21,9 @@
 }
 
 .nav-link {
-  @apply flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-all;
+  @apply flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-green-50 hover:text-green-700 rounded-lg transition-all;
 }
 
 .nav-link.active {
-  @apply bg-blue-600 text-white hover:bg-blue-700;
+  @apply bg-green-700 text-white hover:bg-green-800;
 }

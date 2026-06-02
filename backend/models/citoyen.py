@@ -119,6 +119,14 @@ class Citoyen:
             print(f"❌ Erreur lors de la récupération des citoyens : {e}")
             raise e
 
+    def lister_par_localite(self, id_localite):
+        try:
+            query = "SELECT * FROM Citoyen WHERE id_localite = %s"
+            return self.conn.execute_query(query, (id_localite,))
+        except Exception as e:
+            print(f"❌ Erreur lors de la récupération des citoyens par localité : {e}")
+            raise e
+
     def obtenir_citoyen(self, id_citoyen):
         try:
             query = "SELECT * FROM Citoyen WHERE id_citoyen = %s"

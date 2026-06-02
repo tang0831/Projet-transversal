@@ -1,0 +1,33 @@
+# Documentation des Diagrammes du Système
+
+Ce fichier présente une explication détaillée des trois diagrammes modélisant le système de gestion d'actes et de citoyenneté.
+
+---
+
+## 1. Diagramme de Cas d'Utilisation (@diagramme_cas_utilisation.txt)
+**Rôle :** Définit le périmètre fonctionnel du système et les interactions entre les différents acteurs (Citoyen, Agent, Administrateur) et les services offerts.
+
+*   **Acteurs :** Identifie clairement les responsabilités (ex: les agents gèrent le CRUD des citoyens, les administrateurs supervisent les localités et les logs).
+*   **Fonctionnalités :** Regroupe les actions clés (Authentification, gestion des citoyens/actes, forum, synchronisation, génération PDF).
+*   **Relations :** Utilise les relations d'inclusion (`include`) pour forcer l'authentification et d'extension (`extend`) pour les processus dépendants (ex: la génération PDF est une extension de la création d'acte).
+
+---
+
+## 2. Diagramme de Classe (@diagramme_de_classe.txt)
+**Rôle :** Représente la structure statique et l'organisation logique du système.
+
+*   **Modèles de Données :** Définit les entités principales (`Citoyen`, `Acte`, `Utilisateur`, `Localite`) et leurs relations (ex: un Citoyen appartient à une Localité).
+*   **Contrôleurs :** Sépare la logique métier des modèles (ex: `CitoyenController` encapsule les opérations CRUD sur le modèle `Citoyen`).
+*   **Structures Algorithmiques :** Intègre des structures de données spécialisées (`AVLTree`, `Trie`, `UnionFind`, `BoyerMoore`) utilisées pour optimiser les performances (recherche, organisation des données).
+
+---
+
+## 3. Diagramme de Séquence Global (@seq_global.txt)
+**Rôle :** Illustre le comportement dynamique du système en montrant les échanges de messages au cours du temps pour les processus métiers critiques.
+
+*   **Scénarios couverts :**
+    1.  **Authentification :** Connexion de l'agent et récupération des droits.
+    2.  **Enregistrement Civil :** Flux d'insertion des données citoyen et acte dans la base de données.
+    3.  **Traitement & Impression :** Création d'une demande d'acte et génération du document PDF associé.
+    4.  **Communication :** Publication de messages sur le forum pour la coordination entre districts.
+*   **Vision Système :** Permet de visualiser le rôle des contrôleurs et du générateur PDF dans l'orchestration des tâches après interaction de l'agent.

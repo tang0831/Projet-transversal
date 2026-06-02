@@ -35,8 +35,11 @@ class CitoyenController:
             "id_localite": c[8]
         }
 
-    def list_all(self) -> List[Dict[str, Any]]:
-        citoyens = self.modele_citoyen.lister_tout()
+    def list_all(self, id_localite: Optional[int] = None) -> List[Dict[str, Any]]:
+        if id_localite:
+            citoyens = self.modele_citoyen.lister_par_localite(id_localite)
+        else:
+            citoyens = self.modele_citoyen.lister_tout()
         return [self._tuple_to_dict(c) for c in citoyens]
 
     def create_citoyen(self, data: CitoyenSchema):
@@ -55,9 +58,13 @@ class CitoyenController:
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 
-    def search_citoyens(self, pattern: str) -> List[Dict[str, Any]]:
+    def search_citoyens(self, pattern: str, id_localite: Optional[int] = None) -> List[Dict[str, Any]]:
         try:
-            citoyens = self.modele_citoyen.lister_tout()
+            if id_localite:
+                citoyens = self.modele_citoyen.lister_par_localite(id_localite)
+            else:
+                citoyens = self.modele_citoyen.lister_tout()
+            
             if not citoyens: return []
             
             pattern = pattern.upper()

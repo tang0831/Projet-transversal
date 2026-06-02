@@ -26,6 +26,7 @@ class ActeController:
 
     def create_acte(self, data: ActeSchema):
         try:
+            print(f"DEBUG: Réception de données pour création d'acte: {data}")
             self.modele_acte.ajouter_acte(
                 data.type_acte,
                 data.date_acte,
@@ -35,10 +36,14 @@ class ActeController:
             )
             return {"status": "success", "message": "Acte ajouté"}
         except Exception as e:
+            print(f"DEBUG: Erreur lors de la création d'acte: {e}")
             raise HTTPException(status_code=500, detail=str(e))
 
-    def list_all(self):
-        res = self.modele_acte.lister_tout()
+    def list_all(self, id_localite: Optional[int] = None):
+        if id_localite:
+            res = self.modele_acte.lister_par_localite(id_localite)
+        else:
+            res = self.modele_acte.lister_tout()
         return [self._tuple_to_dict(r) for r in res]
 
     def list_by_citoyen(self, id_citoyen: int):

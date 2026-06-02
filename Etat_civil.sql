@@ -26,7 +26,7 @@ CREATE TABLE Citoyen (
     id_citoyen INT AUTO_INCREMENT PRIMARY KEY,
     numero_cin VARCHAR(20) UNIQUE,
     nom VARCHAR(100),
-    prenom VARCHAR(100), -- Vérifie bien : prenom SANS 'S'
+    prenom VARCHAR(100),
     date_naissance DATE,
     lieu_naissance VARCHAR(100),
     est_vivant BOOLEAN DEFAULT TRUE,

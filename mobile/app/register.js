@@ -1,24 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert, ActivityIndicator, ScrollView, Modal, FlatList } from 'react-native';
 import { useRouter } from 'expo-router';
 import api, { authService } from '../services/api';
+import { Trie } from '../services/Trie';
 
 export default function Register() {
   const [nom, setNom] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('AGENT'); 
+  const [role, setRole] = useState('AGENT');
   const [loading, setLoading] = useState(false);
-  const [localites, setLocalites] = useState([]);
-  const [filteredLocs, setFilteredLocs] = useState([]);
-  const [searchLoc, setSearchLoc] = useState('');
-  const [selectedLoc, setSelectedLoc] = useState(null);
-  const [showLocModal, setShowLocModal] = useState(false);
-  const [isManualEntry, setIsManualEntry] = useState(false);
-  const [manualCommune, setManualCommune] = useState('');
-  const [manualDistrict, setManualDistrict] = useState('');
   
-  const [successMessage, setSuccessMessage] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
+  // State pour auto-complétion
+  const [trie, setTrie] = useState(new Trie());
+  const [suggestions, setSuggestions] = useState([]);
+  const [searchLoc, setSearchLoc] = useState('');
+  const [showLocModal, setShowLocModal] = useState(false);
+  const [selectedLoc, setSelectedLoc] = useState(null);
+
   const router = useRouter();
 
   useEffect(() => {
@@ -29,9 +27,11 @@ export default function Register() {
     try {
       const res = await api.get('/localites');
       if (Array.isArray(res.data)) {
-        const validData = res.data.filter(l => l && l.id_localite !== undefined);
-        setLocalites(validData);
-        setFilteredLocs(validData);
+        const newTrie = new Trie();
+        res.data.forEach(loc => {
+          if (loc.nom_commune) newTrie.insert(loc.nom_commune, loc);
+        });
+        setTrie(newTrie);
       }
     } catch (e) {
       console.error('[Register] Erreur localités:', e);
@@ -40,16 +40,14 @@ export default function Register() {
 
   const handleSearchLoc = (text) => {
     setSearchLoc(text);
-    if (!text) {
-      setFilteredLocs(localites);
-      return;
+    if (text.length > 0) {
+      setSuggestions(trie.startsWith(text));
+    } else {
+      setSuggestions([]);
     }
-    const filtered = localites.filter(l => 
-      l.nom_commune.toLowerCase().includes(text.toLowerCase()) || 
-      l.district.toLowerCase().includes(text.toLowerCase())
-    );
-    setFilteredLocs(filtered);
   };
+
+  // ... (rest of the component logic)
 
   const handleRegister = async () => {
     if (!nom || !password) {

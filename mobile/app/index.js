@@ -26,7 +26,7 @@ export default function Welcome() {
         </View>
 
         <View style={styles.textContainer}>
-          <Text style={styles.title}>VISION 2035</Text>
+          <Text style={styles.title}>TOKANA ID</Text>
           <Text style={styles.subtitle}>E-Gouvernance & État Civil</Text>
           <View style={styles.separator} />
           <Text style={styles.description}>

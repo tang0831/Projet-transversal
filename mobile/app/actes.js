@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, FlatList, TextInput, TouchableOpacity, Activity
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import api from '../services/api';
+import { SyncService } from '../services/SyncService';
 
 export default function Actes() {
   const [actes, setActes] = useState([]);
@@ -11,17 +12,31 @@ export default function Actes() {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({ type_acte: 'NAISSANCE', date_acte: '', numero_registre: '', id_citoyen: '' });
+  const [syncQueueSize, setSyncQueueSize] = useState(0);
 
   const fetchActes = async () => {
     setLoading(true);
     try {
       const res = await api.get('/actes');
       setActes(res.data);
+      // Tentative de synchro auto au chargement
+      checkAndProcessSync();
     } catch (e) {
-      console.error(e);
+      console.log('[Actes] Mode hors-ligne activé (affichage local seulement)');
     } finally {
       setLoading(false);
+      updateQueueSize();
     }
+  };
+
+  const updateQueueSize = async () => {
+    const queue = await SyncService.getQueue();
+    setSyncQueueSize(queue.length);
+  };
+
+  const checkAndProcessSync = async () => {
+    const success = await SyncService.processQueue();
+    if (success) updateQueueSize();
   };
 
   useEffect(() => { fetchActes(); }, []);
@@ -53,7 +68,15 @@ export default function Actes() {
       if (editingId) {
         await api.put(`/actes/${editingId}`, form);
       } else {
-        await api.post('/actes', form);
+        try {
+          await api.post('/actes', form);
+          Alert.alert("Succès", "Acte enregistré en ligne");
+        } catch (netError) {
+          // BASCULE EN MODE OFFLINE
+          console.log('[Actes] Échec réseau, passage en mode hors-ligne');
+          await SyncService.enqueue('/actes', 'POST', form);
+          Alert.alert("Mode Hors-ligne", "Pas de réseau. L'acte a été stocké localement et sera synchronisé automatiquement dès le retour de la connexion.");
+        }
       }
       setModalVisible(false);
       setEditingId(null);
@@ -61,7 +84,7 @@ export default function Actes() {
       fetchActes();
     } catch (e) {
       console.error(e);
-      Alert.alert("Erreur", "Enregistrement impossible. Vérifiez les données.");
+      Alert.alert("Erreur", "Enregistrement impossible.");
     }
   };
 
@@ -108,6 +131,12 @@ export default function Actes() {
         >
           {exporting ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.exportBtnText}>Exporter la liste en PDF 📄</Text>}
         </TouchableOpacity>
+
+        {syncQueueSize > 0 && (
+          <TouchableOpacity style={styles.syncBanner} onPress={checkAndProcessSync}>
+            <Text style={styles.syncText}>⏳ {syncQueueSize} acte(s) en attente de synchro. Tapotez pour réessayer.</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <FlatList
@@ -161,6 +190,8 @@ const styles = StyleSheet.create({
   headerActions: { padding: 15, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#eee' },
   exportBtn: { backgroundColor: '#d32f2f', padding: 12, borderRadius: 8, alignItems: 'center' },
   exportBtnText: { color: '#fff', fontWeight: 'bold' },
+  syncBanner: { backgroundColor: '#fff3cd', padding: 10, borderRadius: 8, marginTop: 10, borderWidth: 1, borderColor: '#ffeeba', alignItems: 'center' },
+  syncText: { color: '#856404', fontSize: 12, fontWeight: 'bold' },
   list: { padding: 15 },
   card: { backgroundColor: '#fff', padding: 15, borderRadius: 10, marginBottom: 10, flexDirection: 'row', alignItems: 'center', elevation: 2 },
   type: { fontSize: 16, fontWeight: 'bold', color: '#003366' },

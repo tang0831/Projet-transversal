@@ -228,7 +228,7 @@ def main():
     while True:
         clean()
         print("\033[1;36m" + "╔══════════════════════════════════════════════════╗")
-        print("║          🏛️  VISION 2035 : ÉTAT CIVIL            ║")
+        print("║          🏛️  TOKANA ID : ÉTAT CIVIL            ║")
         print("╚══════════════════════════════════════════════════╝" + "\033[0m")
         print(" [1] 📍 Gestion des Localités")
         print(" [2] 👤 Gestion des Citoyens")

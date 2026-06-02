@@ -49,11 +49,8 @@ api.interceptors.response.use(
 
 export const authService = {
   login: async (nom, mot_de_passe) => {
-    // On envoie les deux formats pour être sûr de matcher ce que le backend attend
     return api.post('/auth/login', { 
-      nom, 
-      mot_de_passe,
-      username: nom, // Format standard OAuth2/FastAPI
+      username: nom, 
       password: mot_de_passe 
     });
   },

@@ -1,0 +1,168 @@
+classDiagram
+    %% Relations de Modèles
+    Utilisateur "n" --> "1" Localite : appartient à
+    Citoyen "n" --> "1" Localite : réside dans
+    Acte "n" --> "1" Citoyen : concerne
+    ForumModel ..> Utilisateur : référence
+    ForumModel ..> Localite : référence
+    DemandeActeModel ..> Utilisateur : référence
+
+    %% Relations de Contrôleurs
+    CitoyenController --> Citoyen : utilise
+    CitoyenController --> Acte : utilise
+    ActeController --> Acte : utilise
+    UtilisateurController --> Utilisateur : utilise
+    UtilisateurController --> Localite : utilise
+    ForumController --> ForumModel : utilise
+    ForumController --> DemandeActeModel : utilise
+    LocaliteController --> Localite : utilise
+    LogController --> SystemeLog : utilise
+    SyncController --> FileSynchronisation : utilise
+
+    %% Relations de Structures
+    AVLTree --> Node : gère
+    Trie --> TrieNode : gère
+
+    class Utilisateur {
+        +int id_utilisateur
+        +string nom
+        +string mot_de_passe
+        +string role
+        +int id_localite
+        +string photo
+        +ajouter_utilisateur()
+        +modifier_utilisateur()
+        +verifier_identifiants()
+        +obtenir_utilisateur()
+        +lister_tout()
+    }
+
+    class Citoyen {
+        +string nom
+        +string prenom
+        +date date_naissance
+        +string lieu_naissance
+        +bool est_vivant
+        +string sexe
+        +string numero_cin
+        +int id_localite
+        +ajouter_citoyen()
+        +modifier_citoyen()
+        +supprimer_citoyen()
+        +obtenir_citoyen()
+        +marquer_comme_decede()
+        +lister_par_region()
+    }
+
+    class Acte {
+        +int id_acte
+        +string type_acte
+        +date date_acte
+        +string numero_registre
+        +date date_registrement
+        +int id_citoyen
+        +ajouter_acte()
+        +obtenir_acte_complet()
+        +modifier_acte()
+        +supprimer_acte()
+        +lister_par_citoyen()
+    }
+
+    class Localite {
+        +int id_localite
+        +string nom_commune
+        +string district
+        +string region
+        +string code_postal
+        +ajouter_localite()
+        +modifier_localite()
+        +obtenir_localite()
+        +lister_tout()
+    }
+
+    class ForumModel {
+        +ajouter_message()
+        +lister_messages_par_district()
+    }
+
+    class DemandeActeModel {
+        +creer_demande()
+        +lister_toutes()
+        +mettre_a_jour_statut()
+    }
+
+    class SystemeLog {
+        +int id_log
+        +string action
+        +string details
+        +datetime date_log
+        +ajouter_log()
+        +obtenir_log()
+    }
+
+    class FileSynchronisation {
+        +int id
+        +string donnee_synchro
+        +string statut
+        +int priorite
+        +datetime date_creation
+        +ajouter_file()
+        +modifier_file()
+        +obtenir_file()
+    }
+
+    class CitoyenController {
+        +modele_citoyen: Citoyen
+        +modele_acte: Acte
+        +list_all()
+        +create_citoyen()
+        +search_citoyens(pattern)
+        +update_citoyen()
+        +delete_citoyen()
+    }
+
+    class UtilisateurController {
+        +modele_utilisateur: Utilisateur
+        +login()
+        +create_user()
+        +update_user()
+    }
+
+    class Node {
+        +key
+        +data
+        +left: Node
+        +right: Node
+        +int height
+    }
+
+    class AVLTree {
+        +insert()
+        +search()
+        +rotate_left()
+        +rotate_right()
+        +get_balance()
+    }
+
+    class Trie {
+        +root: TrieNode
+        +insert()
+        +search()
+        +starts_with()
+    }
+
+    class UnionFind {
+        +parent: list
+        +rank: list
+        +int count
+        +find()
+        +union()
+        +is_connected()
+    }
+
+    class BoyerMoore {
+        +string pattern
+        +int m
+        +dict bad_char
+        +search(text)
+    }

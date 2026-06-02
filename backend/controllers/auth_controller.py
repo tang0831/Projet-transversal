@@ -14,16 +14,21 @@ class UtilisateurController:
 
     async def login(self, data: LoginSchema):
         try:
+            print(f"DEBUG: Tentative de login avec username={data.username}, password={data.password}")
             user = self.modele_utilisateur.verifier_identifiants(data.username, data.password)
+            print(f"DEBUG: Résultat de la vérification : {user}")
             if user:
                 id_localite = user[4] if len(user) > 4 else None
                 photo = user[5] if len(user) > 5 else None
                 district, region = None, None
                 
-                if id_localite:
-                    loc_data = Localite().obtenir_localite(id_localite)
-                    if loc_data:
-                        district, region = loc_data[2], loc_data[3]
+                try:
+                    if id_localite:
+                        loc_data = Localite().obtenir_localite(id_localite)
+                        if loc_data:
+                            district, region = loc_data[2], loc_data[3]
+                except Exception as loc_e:
+                    print(f"DEBUG: Erreur lors de la récupération de la localité : {loc_e}")
 
                 return {
                     "id_utilisateur": user[0],
@@ -35,6 +40,23 @@ class UtilisateurController:
                     "photo": photo
                 }
             raise HTTPException(status_code=401, detail="Identifiants invalides")
+        except Exception as e:
+            print(f"DEBUG: Erreur critique dans login : {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    async def register(self, request: Request):
+        try:
+            data = await request.json()
+            nom = data.get("username") or data.get("nom")
+            pwd = data.get("password") or data.get("mot_de_passe")
+            role = data.get("role", "CITOYEN") # Défaut à CITOYEN pour l'inscription publique
+            id_localite = data.get("id_localite")
+            
+            if not nom or not pwd:
+                raise HTTPException(status_code=400, detail="Nom et mot de passe requis")
+
+            self.modele_utilisateur.ajouter_utilisateur(nom, pwd, role, id_localite)
+            return {"status": "success", "message": "Inscription réussie"}
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 
