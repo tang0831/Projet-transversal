@@ -1,0 +1,53 @@
+BILAN DES FONCTIONNALITÉS - PROJET TOKANA ID
+
+================================================================================
+1. FONCTIONNALITÉS DÉJÀ PRÉSENTES (OPÉRATIONNELLES)
+================================================================================
+
+[GESTION ADMINISTRATIVE]
+- CRUD Citoyens : Enregistrement, modification et suppression.
+- CRUD Actes : Gestion complète des actes de Naissance, Mariage et Décès.
+- CRUD Localités : Gestion des Communes, Districts et Régions.
+
+[AUTHENTIFICATION & PROFILS]
+- Système de connexion (Login) et Inscription.
+- Gestion des rôles : Citoyen, Agent (Officier), Administrateur.
+- Profil utilisateur : Photo de profil et rattachement à une localité.
+
+[SERVICES CITOYENS]
+- Demandes d'actes en ligne : Soumission et suivi du statut.
+- Forum public : Échanges de messages filtrés par district.
+- Messagerie privée : Chat direct entre utilisateurs avec pièces jointes.
+
+[GÉNÉRATION DE DOCUMENTS]
+- Export PDF Actes : Format officiel malgache (Kopian'ny sora-piankohonana).
+- Export PDF Listes : Génération de listes de citoyens et d'actes pour l'admin.
+
+[ALGORITHMES & OPTIMISATION]
+- Recherche Boyer-Moore : Intégrée pour la recherche rapide de citoyens.
+- Optimisation Knapsack (Sac à dos) : Calcul du déploiement optimal des agents.
+- Mode Hors-ligne : Système de synchronisation (SyncService) fonctionnel sur mobile.
+
+================================================================================
+2. FONCTIONNALITÉS RESTANT À FAIRE (OU À FINALISER)
+================================================================================
+
+[INTÉGRATION ALGORITHMIQUE]
+- Arbre AVL : Intégrer la structure pour la gestion hiérarchique équilibrée des localités.
+- Trie (Préfixe) : Connecter la structure à l'API pour l'autocomplétion des noms.
+- Union-Find : Appliquer la structure pour des calculs de liens de parenté ou regroupements.
+
+[AMÉLIORATIONS MÉTIER]
+- Bouton "Marquer comme décédé" : Action dédiée pour simplifier la mise à jour du statut.
+- Automatisation : Génération automatique d'un acte à partir d'une demande validée.
+
+[INTERFACE & UX]
+- Visualisation hiérarchique : Affichage dynamique de l'arborescence des localités.
+- Statistiques Admin : Tableau de bord visuel des enregistrements par région.
+
+[SÉCURITÉ]
+- Middleware RBAC : Verrouillage plus granulaire des routes API par rôle.
+
+--------------------------------------------------------------------------------
+État au : Mardi 2 Juin 2026
+--------------------------------------------------------------------------------
