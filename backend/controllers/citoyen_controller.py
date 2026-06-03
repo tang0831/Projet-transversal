@@ -16,6 +16,11 @@ class CitoyenSchema(BaseModel):
     sexe: str
     numero_cin: str
     id_localite: Optional[int] = None
+    profession: Optional[str] = None
+    adresse: Optional[str] = None
+    id_pere: Optional[int] = None
+    id_mere: Optional[int] = None
+    situation_matrimoniale: Optional[str] = 'CÉLIBATAIRE'
 
 class CitoyenController:
     def __init__(self):
@@ -32,7 +37,12 @@ class CitoyenController:
             "lieu_naissance": c[5],
             "est_vivant": bool(c[6]),
             "sexe": c[7],
-            "id_localite": c[8]
+            "id_localite": c[8],
+            "profession": c[9],
+            "adresse": c[10],
+            "id_pere": c[11],
+            "id_mere": c[12],
+            "situation_matrimoniale": c[13]
         }
 
     def list_all(self, id_localite: Optional[int] = None) -> List[Dict[str, Any]]:
@@ -52,7 +62,12 @@ class CitoyenController:
                 data.est_vivant,
                 data.sexe,
                 data.numero_cin,
-                data.id_localite
+                data.id_localite,
+                data.profession,
+                data.adresse,
+                data.id_pere,
+                data.id_mere,
+                data.situation_matrimoniale
             )
             return {"status": "success", "message": "Citoyen enregistré avec succès"}
         except Exception as e:
@@ -97,7 +112,12 @@ class CitoyenController:
                 data.est_vivant,
                 data.sexe,
                 data.numero_cin,
-                data.id_localite
+                data.id_localite,
+                data.profession,
+                data.adresse,
+                data.id_pere,
+                data.id_mere,
+                data.situation_matrimoniale
             )
             return {"status": "success", "message": "Citoyen mis à jour"}
         except Exception as e:

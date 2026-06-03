@@ -19,15 +19,16 @@ class Acte:
         self.conn.connect()
 
     def ajouter_acte(
-        self, type_acte, date_acte, numero_registre, date_registrement, id_citoyen=None
+        self, type_acte, date_acte, numero_registre, date_registrement, id_citoyen=None, id_conjoint=None
     ):
-        query = "INSERT INTO acte (type_acte, date_acte, numero_registre, date_registrement, id_citoyen) VALUES (%s, %s, %s, %s, %s)"
+        query = "INSERT INTO acte (type_acte, date_acte, numero_registre, date_registrement, id_citoyen, id_conjoint) VALUES (%s, %s, %s, %s, %s, %s)"
         values = (
             type_acte,
             date_acte,
             numero_registre,
             date_registrement,
             id_citoyen,
+            id_conjoint,
         )
         result = self.conn.execute_query(query, values)
         if result is None:
@@ -37,9 +38,21 @@ class Acte:
     def obtenir_acte_complet(self, id_acte):
         try:
             query = """
-                SELECT a.*, c.nom, c.prenom, c.numero_cin
+                SELECT a.*, 
+                       c.nom, c.prenom, c.numero_cin, c.date_naissance, c.lieu_naissance, c.sexe, c.profession, c.adresse,
+                       p.nom as nom_pere, p.prenom as prenom_pere, p.profession as profession_pere, p.date_naissance as date_nais_pere,
+                       m.nom as nom_mere, m.prenom as prenom_mere, m.profession as profession_mere, m.date_naissance as date_nais_mere,
+                       l.nom_commune, l.district, l.region,
+                       conj.nom as nom_conj, conj.prenom as prenom_conj, conj.date_naissance as date_nais_conj, conj.lieu_naissance as lieu_nais_conj,
+                       pp.nom as pere_conj, mm.nom as mere_conj
                 FROM acte a
                 LEFT JOIN Citoyen c ON a.id_citoyen = c.id_citoyen
+                LEFT JOIN Citoyen p ON c.id_pere = p.id_citoyen
+                LEFT JOIN Citoyen m ON c.id_mere = m.id_citoyen
+                LEFT JOIN localite l ON c.id_localite = l.id_localite
+                LEFT JOIN Citoyen conj ON a.id_conjoint = conj.id_citoyen
+                LEFT JOIN Citoyen pp ON conj.id_pere = pp.id_citoyen
+                LEFT JOIN Citoyen mm ON conj.id_mere = mm.id_citoyen
                 WHERE a.id_acte = %s
             """
             result = self.conn.execute_query(query, (id_acte,))

@@ -7,7 +7,7 @@ class ConnexionBase:
         self,
         host="localhost",
         user="root",
-        password="fanambybisous",
+        password="Doja1390",
         database="Etat_civil",
     ):
         self.host = host

@@ -18,6 +18,19 @@ const Forum = ({ user }) => {
   const [newMessage, setNewMessage] = useState("");
   const [showDemandeForm, setShowDemandeForm] = useState(false);
   const [typeActe, setTypeActe] = useState("NAISSANCE");
+  const [formData, setFormData] = useState({
+    nom_complet: "",
+    date_naissance: "",
+    lieu_naissance: "",
+    nom_pere: "",
+    prof_pere: "",
+    date_nais_pere: "",
+    nom_mere: "",
+    prof_mere: "",
+    date_nais_mere: "",
+    adresse: "",
+    profession_demandeur: ""
+  });
   const [searchTerm, setSearchTerm] = useState("");
 
   const isAgent =
@@ -69,8 +82,22 @@ const Forum = ({ user }) => {
       await api.post("/demandes", {
         id_utilisateur: user.id_utilisateur,
         type_acte: typeActe,
+        ...formData
       });
       setShowDemandeForm(false);
+      setFormData({
+        nom_complet: "",
+        date_naissance: "",
+        lieu_naissance: "",
+        nom_pere: "",
+        prof_pere: "",
+        date_nais_pere: "",
+        nom_mere: "",
+        prof_mere: "",
+        date_nais_mere: "",
+        adresse: "",
+        profession_demandeur: ""
+      });
       fetchData();
     } catch (e) {
       console.error(e);
@@ -268,23 +295,50 @@ const Forum = ({ user }) => {
           {showDemandeForm && (
             <form
               onSubmit={handleCreateDemande}
-              className="mb-4 p-4 bg-green-50/50 rounded-xl border border-green-100/70 shrink-0"
+              className="mb-4 p-4 bg-green-50/50 rounded-xl border border-green-100/70 shrink-0 space-y-3 overflow-y-auto max-h-[400px]"
             >
-              <label className="block text-[11px] font-bold text-[#007A33] uppercase tracking-wider mb-2">
+              <label className="block text-[11px] font-bold text-[#007A33] uppercase tracking-wider">
                 Type d'acte requis
               </label>
               <select
                 value={typeActe}
                 onChange={(e) => setTypeActe(e.target.value)}
-                className="w-full border border-slate-200 rounded-lg p-2 mb-3 bg-white text-sm font-semibold text-slate-700 outline-none"
+                className="w-full border border-slate-200 rounded-lg p-2 bg-white text-sm font-semibold text-slate-700 outline-none"
               >
                 <option value="NAISSANCE"> Acte de Naissance</option>
                 <option value="MARIAGE"> Acte de Mariage</option>
                 <option value="DECES"> Acte de Décès</option>
               </select>
+
+              <div className="space-y-2">
+                <input placeholder="Nom complet" value={formData.nom_complet} onChange={e => setFormData({...formData, nom_complet: e.target.value})} className="w-full border rounded-lg p-2 text-xs" required />
+                <div className="flex gap-2">
+                  <input type="date" value={formData.date_naissance} onChange={e => setFormData({...formData, date_naissance: e.target.value})} className="flex-1 border rounded-lg p-2 text-xs" required />
+                  <input placeholder="Lieu de naissance" value={formData.lieu_naissance} onChange={e => setFormData({...formData, lieu_naissance: e.target.value})} className="flex-1 border rounded-lg p-2 text-xs" required />
+                </div>
+                
+                <p className="text-[10px] font-black text-slate-400 uppercase mt-2">Information du Père</p>
+                <input placeholder="Nom du père" value={formData.nom_pere} onChange={e => setFormData({...formData, nom_pere: e.target.value})} className="w-full border rounded-lg p-2 text-xs" />
+                <div className="flex gap-2">
+                  <input type="date" value={formData.date_nais_pere} onChange={e => setFormData({...formData, date_nais_pere: e.target.value})} className="flex-1 border rounded-lg p-2 text-xs" title="Date de naissance du père" />
+                  <input placeholder="Profession père" value={formData.prof_pere} onChange={e => setFormData({...formData, prof_pere: e.target.value})} className="flex-1 border rounded-lg p-2 text-xs" />
+                </div>
+
+                <p className="text-[10px] font-black text-slate-400 uppercase mt-2">Information de la Mère</p>
+                <input placeholder="Nom de la mère" value={formData.nom_mere} onChange={e => setFormData({...formData, nom_mere: e.target.value})} className="w-full border rounded-lg p-2 text-xs" />
+                <div className="flex gap-2">
+                  <input type="date" value={formData.date_nais_mere} onChange={e => setFormData({...formData, date_nais_mere: e.target.value})} className="flex-1 border rounded-lg p-2 text-xs" title="Date de naissance de la mère" />
+                  <input placeholder="Profession mère" value={formData.prof_mere} onChange={e => setFormData({...formData, prof_mere: e.target.value})} className="flex-1 border rounded-lg p-2 text-xs" />
+                </div>
+
+                <p className="text-[10px] font-black text-slate-400 uppercase mt-2">Autres détails</p>
+                <input placeholder="Adresse de domicile" value={formData.adresse} onChange={e => setFormData({...formData, adresse: e.target.value})} className="w-full border rounded-lg p-2 text-xs" required />
+                <input placeholder="Votre profession" value={formData.profession_demandeur} onChange={e => setFormData({...formData, profession_demandeur: e.target.value})} className="w-full border rounded-lg p-2 text-xs" />
+              </div>
+
               <button
                 type="submit"
-                className="w-full bg-[#007A33] text-white py-2 rounded-lg text-xs font-bold uppercase tracking-wider"
+                className="w-full bg-[#007A33] text-white py-2 rounded-lg text-xs font-bold uppercase tracking-wider shadow-md hover:bg-[#00642a] transition-all"
               >
                 Soumettre le dossier
               </button>

@@ -1,19 +1,20 @@
 from connexion_base import ConnexionBase
 
 class Utilisateur:
-    def __init__(self, nom=None, mot_de_passe=None, role=None, id_utilisateur=None, id_localite=None, photo=None):
+    def __init__(self, nom=None, mot_de_passe=None, role=None, id_utilisateur=None, id_localite=None, photo=None, id_citoyen=None):
         self.id_utilisateur = id_utilisateur
         self.nom = nom
         self.mot_de_passe = mot_de_passe
         self.role = role
         self.id_localite = id_localite
         self.photo = photo
+        self.id_citoyen = id_citoyen
         self.conn = ConnexionBase()
 
-    def ajouter_utilisateur(self, nom, mot_de_passe, role, id_localite=None, photo=None):
+    def ajouter_utilisateur(self, nom, mot_de_passe, role, id_localite=None, photo=None, id_citoyen=None):
         try:
-            query = "INSERT INTO utilisateur (nom, mot_de_passe, role, id_localite, photo) VALUES (%s, %s, %s, %s, %s)"
-            values = (nom, mot_de_passe, role, id_localite, photo)
+            query = "INSERT INTO utilisateur (nom, mot_de_passe, role, id_localite, photo, id_citoyen) VALUES (%s, %s, %s, %s, %s, %s)"
+            values = (nom, mot_de_passe, role, id_localite, photo, id_citoyen)
             self.conn.execute_query(query, values)
         except Exception as e:
             print(f"Erreur ajout: {e}")
@@ -32,7 +33,8 @@ class Utilisateur:
                 "mot_de_passe": "mot_de_passe",
                 "role": "role",
                 "id_localite": "id_localite",
-                "photo": "photo"
+                "photo": "photo",
+                "id_citoyen": "id_citoyen"
             }
             
             updates = []
@@ -65,6 +67,7 @@ class Utilisateur:
             self.id_utilisateur, self.nom, self.mot_de_passe, self.role = u[0], u[1], u[2], u[3]
             self.id_localite = u[4] if len(u) > 4 else None
             self.photo = u[5] if len(u) > 5 else None
+            self.id_citoyen = u[6] if len(u) > 6 else None
             return u
         return None
 

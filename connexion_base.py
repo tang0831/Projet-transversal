@@ -6,7 +6,7 @@ class ConnexionBase:
         self.config = {
             "host": "localhost",
             "user": "root",
-            "password": "fanambybisous",
+            "password": "Doja1390",
             "database": "Etat_civil",
             "ssl_disabled": True
         }

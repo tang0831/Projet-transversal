@@ -148,6 +148,8 @@ const Register = ({ onToggleLogin }) => {
 // --- LOCALITES MODULE (FULL CRUD) ---
 const Localites = ({ user }) => {
   const [list, setList] = useState([]);
+  const [hierarchy, setHierarchy] = useState([]);
+  const [showHierarchy, setShowHierarchy] = useState(false);
   const [form, setForm] = useState({ nom_commune: '', district: '', region: '', code_postal: '' });
   const [editingId, setEditingId] = useState(null);
 
@@ -161,6 +163,9 @@ const Localites = ({ user }) => {
       }
       const res = await api.get(`/localites?${params.toString()}`);
       setList(res.data);
+
+      const resH = await api.get('/localites/hierarchie');
+      setHierarchy(resH.data);
     } catch (e) { console.error(e); }
   };
 
@@ -194,51 +199,87 @@ const Localites = ({ user }) => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border">
-        <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-          {editingId ? <Pencil className="w-5 h-5 text-green-700" /> : <Plus className="w-5 h-5 text-green-700" />}
-          {editingId ? 'Modifier Localité' : 'Ajouter Localité'}
-        </h3>
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
-          <input placeholder="Commune" value={form.nom_commune} onChange={e => setForm({...form, nom_commune: e.target.value})} required className="border p-2 rounded-lg text-sm" />
-          <input placeholder="District" value={form.district} onChange={e => setForm({...form, district: e.target.value})} required className="border p-2 rounded-lg text-sm" />
-          <input placeholder="Région" value={form.region} onChange={e => setForm({...form, region: e.target.value})} required className="border p-2 rounded-lg text-sm" />
-          <input placeholder="CP" value={form.code_postal} onChange={e => setForm({...form, code_postal: e.target.value})} required className="border p-2 rounded-lg text-sm" />
-          <div className="flex gap-2 sm:col-span-2 md:col-span-1">
-            <button type="submit" className="bg-green-700 text-white p-2 rounded-lg font-bold flex-1 text-sm">Valider</button>
-            {editingId && <button type="button" onClick={() => {setEditingId(null); setForm({nom_commune:'',district:'',region:'',code_postal:''})}} className="bg-gray-200 p-2 rounded-lg font-bold flex-1 text-sm">X</button>}
-          </div>
-        </form>
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-black uppercase tracking-tight text-slate-800">Gestion Géographique</h2>
+        <button 
+          onClick={() => setShowHierarchy(!showHierarchy)}
+          className="bg-slate-800 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-slate-700 transition-all shadow-md"
+        >
+          {showHierarchy ? 'Vue Liste' : 'Vue Hiérarchique (AVL)'}
+        </button>
       </div>
-      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left min-w-[600px]">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="p-4 text-xs font-bold uppercase tracking-wider">Commune</th>
-                <th className="p-4 text-xs font-bold uppercase tracking-wider">District</th>
-                <th className="p-4 text-xs font-bold uppercase tracking-wider">Région</th>
-                <th className="p-4 text-xs font-bold uppercase tracking-wider text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {list.map(l => (
-                <tr key={l.id_localite} className="border-b hover:bg-gray-50 transition-colors">
-                  <td className="p-4 font-medium text-sm">{l.nom_commune}</td>
-                  <td className="p-4 text-sm">{l.district}</td>
-                  <td className="p-4 text-sm">{l.region}</td>
-                  <td className="p-4 text-right">
-                    <div className="flex justify-end gap-2">
-                      <button onClick={() => startEdit(l)} className="p-1.5 text-green-700 hover:bg-green-50 rounded-lg transition-colors"><Pencil size={18}/></button>
-                      <button onClick={() => del(l.id_localite)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={18}/></button>
+
+      {showHierarchy ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in slide-in-from-bottom-4 duration-500">
+          {hierarchy.map((reg, idx) => (
+            <div key={idx} className="bg-white rounded-2xl border shadow-sm overflow-hidden">
+              <div className="bg-green-700 p-4 text-white font-black text-sm uppercase tracking-widest flex items-center gap-2">
+                <MapPin size={16} /> {reg.region}
+              </div>
+              <div className="p-4 space-y-4">
+                {reg.districts.map((dist, dIdx) => (
+                  <div key={dIdx} className="border-l-2 border-green-100 pl-4">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">{dist.name}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {dist.communes.map((com, cIdx) => (
+                        <span key={cIdx} className="bg-slate-50 text-slate-600 px-3 py-1 rounded-lg text-[10px] font-bold border border-slate-100">{com}</span>
+                      ))}
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
-      </div>
+      ) : (
+        <>
+          <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border">
+            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+              {editingId ? <Pencil className="w-5 h-5 text-green-700" /> : <Plus className="w-5 h-5 text-green-700" />}
+              {editingId ? 'Modifier Localité' : 'Ajouter Localité'}
+            </h3>
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+              <input placeholder="Commune" value={form.nom_commune} onChange={e => setForm({...form, nom_commune: e.target.value})} required className="border p-2 rounded-lg text-sm" />
+              <input placeholder="District" value={form.district} onChange={e => setForm({...form, district: e.target.value})} required className="border p-2 rounded-lg text-sm" />
+              <input placeholder="Région" value={form.region} onChange={e => setForm({...form, region: e.target.value})} required className="border p-2 rounded-lg text-sm" />
+              <input placeholder="CP" value={form.code_postal} onChange={e => setForm({...form, code_postal: e.target.value})} required className="border p-2 rounded-lg text-sm" />
+              <div className="flex gap-2 sm:col-span-2 md:col-span-1">
+                <button type="submit" className="bg-green-700 text-white p-2 rounded-lg font-bold flex-1 text-sm">Valider</button>
+                {editingId && <button type="button" onClick={() => {setEditingId(null); setForm({nom_commune:'',district:'',region:'',code_postal:''})}} className="bg-gray-200 p-2 rounded-lg font-bold flex-1 text-sm">X</button>}
+              </div>
+            </form>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left min-w-[600px]">
+                <thead className="bg-gray-50 border-b">
+                  <tr>
+                    <th className="p-4 text-xs font-bold uppercase tracking-wider">Commune</th>
+                    <th className="p-4 text-xs font-bold uppercase tracking-wider">District</th>
+                    <th className="p-4 text-xs font-bold uppercase tracking-wider">Région</th>
+                    <th className="p-4 text-xs font-bold uppercase tracking-wider text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {list.map(l => (
+                    <tr key={l.id_localite} className="border-b hover:bg-gray-50 transition-colors">
+                      <td className="p-4 font-medium text-sm">{l.nom_commune}</td>
+                      <td className="p-4 text-sm">{l.district}</td>
+                      <td className="p-4 text-sm">{l.region}</td>
+                      <td className="p-4 text-right">
+                        <div className="flex justify-end gap-2">
+                          <button onClick={() => startEdit(l)} className="p-1.5 text-green-700 hover:bg-green-50 rounded-lg transition-colors"><Pencil size={18}/></button>
+                          <button onClick={() => del(l.id_localite)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={18}/></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
@@ -247,19 +288,20 @@ const Localites = ({ user }) => {
 const Citoyens = ({ user }) => {
   const [list, setList] = useState([]);
   const [search, setSearch] = useState('');
+  const [searchSuggestions, setSearchSuggestions] = useState([]);
   const [suggestions, setSuggestions] = useState([]);
   const [lieux, setLieux] = useState([]); // Remplacement du trie
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({ 
-    nom: '', 
-    prenom: '', 
-    date_naissance: '', 
-    lieu_naissance: '', 
-    est_vivant: true, 
-    sexe: 'M', 
+    nom: '',
+    prenom: '',
+    date_naissance: '',
+    lieu_naissance: '',
+    est_vivant: true,
+    sexe: 'M',
     numero_cin: '',
     id_localite: user?.id_localite || null
-  });
+    });
 
   const fetchList = async (q = '') => {
     try {
@@ -282,6 +324,19 @@ const Citoyens = ({ user }) => {
   };
 
   useEffect(() => { fetchList(); }, [user]);
+
+  const handleSearchChange = async (text) => {
+    setSearch(text);
+    if (text.length >= 2) {
+      try {
+        const res = await api.get(`/citoyens/autocomplete?prefix=${text}`);
+        // res.data est une liste de [key, data]
+        setSearchSuggestions(res.data.map(item => item[1]));
+      } catch (e) { console.error(e); }
+    } else {
+      setSearchSuggestions([]);
+    }
+  };
 
   const handleLieuChange = (text) => {
     setForm({...form, lieu_naissance: text});
@@ -307,15 +362,15 @@ const Citoyens = ({ user }) => {
       }
       setEditingId(null);
       setForm({ 
-        nom: '', 
-        prenom: '', 
-        date_naissance: '', 
-        lieu_naissance: '', 
-        est_vivant: true, 
-        sexe: 'M', 
+        nom: '',
+        prenom: '',
+        date_naissance: '',
+        lieu_naissance: '',
+        est_vivant: true,
+        sexe: 'M',
         numero_cin: '',
         id_localite: user?.id_localite || null
-      });
+        });
       fetchList();
     } catch (e) { console.error(e); }
   };
@@ -334,7 +389,17 @@ const Citoyens = ({ user }) => {
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <input className="w-full border pl-10 p-2 rounded-xl outline-none focus:ring-2 focus:ring-green-500 text-sm" placeholder="Rechercher par NOM..." value={search} onChange={e => setSearch(e.target.value)} />
+          <input className="w-full border pl-10 p-2 rounded-xl outline-none focus:ring-2 focus:ring-green-500 text-sm" placeholder="Rechercher par NOM..." value={search} onChange={e => handleSearchChange(e.target.value)} />
+          {searchSuggestions.length > 0 && (
+            <div className="absolute z-50 bg-white border border-gray-300 w-full mt-1 rounded-xl shadow-2xl overflow-hidden">
+              {searchSuggestions.map((s, i) => (
+                <div key={i} className="p-3 cursor-pointer hover:bg-green-50 flex items-center gap-3 border-b last:border-b-0" onClick={() => {setSearch(s.display.split(' ')[0]); setSearchSuggestions([]); fetchList(s.display.split(' ')[0]);}}>
+                  <div className="bg-green-100 p-1.5 rounded-lg text-green-700"><UserIcon size={14}/></div>
+                  <span className="text-sm font-bold">{s.display}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         <button onClick={() => fetchList(search)} className="bg-green-700 text-white px-6 py-2 rounded-xl font-bold text-sm shadow-md hover:bg-green-800 transition-all">Chercher</button>
       </div>
@@ -528,38 +593,38 @@ const Actes = ({ user }) => {
 // --- MY ACCOUNT MODULE ---
 const MyAccount = ({ user }) => {
   const [myActes, setMyActes] = useState([]);
-  const [profile, setProfile] = useState({ nom: '', mot_de_passe: '', role: '', id_localite: null, photo: null });
+  const [profile, setProfile] = useState({ 
+    nom: '', mot_de_passe: '', role: '', id_localite: null, photo: null,
+    prenom: '', date_naissance: '', lieu_naissance: '', numero_cin: '',
+    profession: '', adresse: '', id_pere: null, id_mere: null, situation_matrimoniale: '',
+    nom_pere: '', prenom_pere: '', date_nais_pere: '', prof_pere: '',
+    nom_mere: '', prenom_mere: '', date_nais_mere: '', prof_mere: ''
+  });
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
   const fetchProfile = async () => {
     const uid = user?.id_utilisateur || user?.id;
-    if (!uid) {
-      console.error("ID utilisateur non trouvé dans l'objet user:", user);
-      return;
-    }
+    if (!uid) return;
     try {
       const res = await api.get(`/users/${uid}`);
       setProfile(res.data);
+      if (res.data.id_citoyen) {
+        api.get(`/my-actes/${res.data.id_citoyen}`).then(r => setMyActes(r.data)).catch(console.error);
+      }
     } catch (e) { console.error(e); }
   };
 
   useEffect(() => {
     fetchProfile();
-    const cid = user?.id_citoyen;
-    if (cid) {
-      api.get(`/my-actes/${cid}`).then(res => setMyActes(res.data)).catch(e => console.error(e));
-    }
   }, [user]);
 
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfile({ ...profile, photo: reader.result });
-      };
+      reader.onloadend = () => setProfile({ ...profile, photo: reader.result });
       reader.readAsDataURL(file);
     }
   };
@@ -567,10 +632,7 @@ const MyAccount = ({ user }) => {
   const handleUpdate = async (e) => {
     e.preventDefault();
     const uid = user?.id_utilisateur || user?.id;
-    if (!uid) {
-      setMessage('Session invalide. Veuillez vous reconnecter.');
-      return;
-    }
+    if (!uid) return;
     setLoading(true);
     try {
       await api.put(`/users/${uid}`, profile);
@@ -580,8 +642,7 @@ const MyAccount = ({ user }) => {
       fetchProfile();
     } catch (e) {
       console.error(e);
-      const errorMsg = e.response?.data?.detail || 'Erreur lors de la mise à jour.';
-      setMessage(errorMsg);
+      setMessage(e.response?.data?.detail || 'Erreur lors de la mise à jour.');
     } finally {
       setLoading(false);
     }
@@ -599,15 +660,15 @@ const MyAccount = ({ user }) => {
             )}
           </div>
           <div>
-            <h3 className="text-3xl font-bold uppercase tracking-tight">{profile.nom || user.username}</h3>
-            <p className="text-green-200 font-bold uppercase text-[10px] tracking-widest">{profile.role || user.role} • ID: {user.id_citoyen || 'Non lié'}</p>
+            <h3 className="text-3xl font-bold uppercase tracking-tight">{profile.nom} {profile.prenom}</h3>
+            <p className="text-green-200 font-bold uppercase text-[10px] tracking-widest">{profile.role} • CIN: {profile.numero_cin || 'N/A'}</p>
           </div>
         </div>
         <button 
           onClick={() => setIsEditing(!isEditing)}
           className="bg-white text-green-700 px-6 py-2 rounded-xl font-bold hover:bg-green-50 transition-colors flex items-center gap-2"
         >
-          <Pencil size={18} /> {isEditing ? 'Annuler' : 'Modifier Profil'}
+          {isEditing ? <X size={18} /> : <Pencil size={18} />} {isEditing ? 'Annuler' : 'Modifier Profil'}
         </button>
       </div>
 
@@ -618,80 +679,153 @@ const MyAccount = ({ user }) => {
       )}
 
       {isEditing ? (
-        <div className="bg-white p-6 rounded-xl border shadow-sm animate-in fade-in duration-300">
-          <h3 className="font-bold mb-4 uppercase text-sm text-gray-500 tracking-widest">Informations Personnelles</h3>
-          <form onSubmit={handleUpdate} className="space-y-4 max-w-md">
+        <form onSubmit={handleUpdate} className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in duration-300">
+          <div className="bg-white p-6 rounded-xl border shadow-sm space-y-4">
+            <h3 className="font-bold uppercase text-sm text-gray-500 tracking-widest border-b pb-2">Informations de Compte</h3>
             <div>
               <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Photo de Profil</label>
-              <input 
-                type="file" 
-                accept="image/*"
-                onChange={handlePhotoChange}
-                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-800 hover:file:bg-green-100"
-              />
+              <input type="file" accept="image/*" onChange={handlePhotoChange} className="w-full text-xs text-gray-500" />
             </div>
-            <div>
-              <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Identifiant</label>
-              <input 
-                value={profile.nom} 
-                onChange={e => setProfile({...profile, nom: e.target.value})}
-                className="w-full border rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-green-500"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Mot de passe</label>
-              <input 
-                type="text"
-                value={profile.mot_de_passe} 
-                onChange={e => setProfile({...profile, mot_de_passe: e.target.value})}
-                className="w-full border rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-green-500"
-                required
-              />
-            </div>
-            <button 
-              type="submit" 
-              disabled={loading}
-              className="bg-green-700 text-white px-8 py-2 rounded-xl font-bold hover:bg-green-800 disabled:opacity-50"
-            >
-              {loading ? 'Enregistrement...' : 'Sauvegarder les modifications'}
-            </button>
-          </form>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white p-6 rounded-xl border shadow-sm">
-            <h3 className="font-bold mb-4 uppercase text-sm text-gray-500 tracking-widest">Détails du Compte</h3>
-            <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-[10px] font-black text-gray-400 uppercase">Nom d'utilisateur</p>
-                <p className="font-bold text-gray-900">{profile.nom}</p>
+                <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Nom (Usage)</label>
+                <input value={profile.nom} onChange={e => setProfile({...profile, nom: e.target.value.toUpperCase()})} className="w-full border rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-green-500 outline-none" required />
               </div>
               <div>
-                <p className="text-[10px] font-black text-gray-400 uppercase">Mot de passe</p>
-                <p className="font-bold text-gray-900">•••••••• (Visible en mode édition)</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-black text-gray-400 uppercase">Rôle Système</p>
-                <span className="inline-block bg-green-50 text-green-700 px-3 py-1 rounded-full text-[10px] font-black uppercase mt-1">
-                  {profile.role}
-                </span>
+                <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Mot de passe</label>
+                <input type="text" value={profile.mot_de_passe} onChange={e => setProfile({...profile, mot_de_passe: e.target.value})} className="w-full border rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-green-500 outline-none" required />
               </div>
             </div>
           </div>
 
+          <div className="bg-white p-6 rounded-xl border shadow-sm space-y-4">
+            <h3 className="font-bold uppercase text-sm text-gray-500 tracking-widest border-b pb-2">État Civil & Filiation</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Prénom(s)</label>
+                <input value={profile.prenom || ''} onChange={e => setProfile({...profile, prenom: e.target.value})} className="w-full border rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-green-500 outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase mb-1">N° CIN</label>
+                <input value={profile.numero_cin || ''} onChange={e => setProfile({...profile, numero_cin: e.target.value})} className="w-full border rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-green-500 outline-none" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Date Naissance</label>
+                <input type="date" value={profile.date_naissance || ''} onChange={e => setProfile({...profile, date_naissance: e.target.value})} className="w-full border rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-green-500 outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Lieu Naissance</label>
+                <input value={profile.lieu_naissance || ''} onChange={e => setProfile({...profile, lieu_naissance: e.target.value})} className="w-full border rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-green-500 outline-none" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Profession</label>
+                    <input value={profile.profession || ''} onChange={e => setProfile({...profile, profession: e.target.value})} className="w-full border rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-green-500 outline-none" />
+                </div>
+                <div>
+                    <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Statut Matrimonial</label>
+                    <select value={profile.situation_matrimoniale || 'CÉLIBATAIRE'} onChange={e => setProfile({...profile, situation_matrimoniale: e.target.value})} className="w-full border rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-green-500 outline-none">
+                        <option value="CÉLIBATAIRE">CÉLIBATAIRE</option>
+                        <option value="MARIÉ(E)">MARIÉ(E)</option>
+                        <option value="VEUF(VE)">VEUF(VE)</option>
+                        <option value="DIVORCÉ(E)">DIVORCÉ(E)</option>
+                    </select>
+                </div>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Adresse de Domicile</label>
+              <input value={profile.adresse || ''} onChange={e => setProfile({...profile, adresse: e.target.value})} className="w-full border rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-green-500 outline-none" />
+            </div>
+
+            <div className="border-t pt-4 mt-4 space-y-4">
+                <h4 className="text-[10px] font-black text-green-700 uppercase tracking-widest">Informations du Père</h4>
+                <div className="grid grid-cols-2 gap-4">
+                    <input placeholder="Nom du Père" value={profile.nom_pere || ''} onChange={e => setProfile({...profile, nom_pere: e.target.value})} className="border rounded-xl px-4 py-2 text-xs" />
+                    <input placeholder="Prénom(s) Père" value={profile.prenom_pere || ''} onChange={e => setProfile({...profile, prenom_pere: e.target.value})} className="border rounded-xl px-4 py-2 text-xs" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <input type="date" value={profile.date_nais_pere || ''} onChange={e => setProfile({...profile, date_nais_pere: e.target.value})} className="border rounded-xl px-4 py-2 text-xs" title="Date de naissance du père" />
+                    <input placeholder="Profession père" value={profile.prof_pere || ''} onChange={e => setProfile({...profile, prof_pere: e.target.value})} className="border rounded-xl px-4 py-2 text-xs" />
+                </div>
+            </div>
+
+            <div className="border-t pt-4 mt-4 space-y-4">
+                <h4 className="text-[10px] font-black text-green-700 uppercase tracking-widest">Informations de la Mère</h4>
+                <div className="grid grid-cols-2 gap-4">
+                    <input placeholder="Nom de la Mère" value={profile.nom_mere || ''} onChange={e => setProfile({...profile, nom_mere: e.target.value})} className="border rounded-xl px-4 py-2 text-xs" />
+                    <input placeholder="Prénom(s) Mère" value={profile.prenom_mere || ''} onChange={e => setProfile({...profile, prenom_mere: e.target.value})} className="border rounded-xl px-4 py-2 text-xs" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <input type="date" value={profile.date_nais_mere || ''} onChange={e => setProfile({...profile, date_nais_mere: e.target.value})} className="border rounded-xl px-4 py-2 text-xs" title="Date de naissance de la mère" />
+                    <input placeholder="Profession mère" value={profile.prof_mere || ''} onChange={e => setProfile({...profile, prof_mere: e.target.value})} className="border rounded-xl px-4 py-2 text-xs" />
+                </div>
+            </div>
+          </div>
+          
+          <div className="lg:col-span-2 flex justify-center pt-4">
+            <button type="submit" disabled={loading} className="bg-green-700 text-white px-12 py-3 rounded-2xl font-black uppercase tracking-widest hover:bg-green-800 shadow-lg transition-all active:scale-95 disabled:opacity-50">
+              {loading ? 'Enregistrement en cours...' : 'Mettre à jour mon identité numérique'}
+            </button>
+          </div>
+        </form>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white p-6 rounded-xl border shadow-sm space-y-6">
+            <h3 className="font-bold uppercase text-sm text-gray-500 tracking-widest border-b pb-2">Détails de l'Identité</h3>
+            <div className="grid grid-cols-2 gap-y-4 text-sm">
+              <div><p className="text-[10px] font-black text-gray-400 uppercase">CIN</p><p className="font-bold text-gray-900 font-mono">{profile.numero_cin || 'Non renseigné'}</p></div>
+              <div><p className="text-[10px] font-black text-gray-400 uppercase">Statut</p><p className="font-bold text-green-700">{profile.situation_matrimoniale || 'CÉLIBATAIRE'}</p></div>
+              <div><p className="text-[10px] font-black text-gray-400 uppercase">Né(e) le</p><p className="font-bold text-gray-900">{profile.date_naissance || '...'}</p></div>
+              <div><p className="text-[10px] font-black text-gray-400 uppercase">à</p><p className="font-bold text-gray-900">{profile.lieu_naissance || '...'}</p></div>
+              <div className="col-span-2"><p className="text-[10px] font-black text-gray-400 uppercase">Profession</p><p className="font-bold text-gray-900">{profile.profession || 'Non renseignée'}</p></div>
+              <div className="col-span-2"><p className="text-[10px] font-black text-gray-400 uppercase">Adresse</p><p className="font-bold text-gray-900">{profile.adresse || 'Non renseignée'}</p></div>
+            </div>
+          </div>
+
           <div className="bg-white p-6 rounded-xl border shadow-sm">
-            <h3 className="font-bold mb-4 uppercase text-sm text-gray-500 tracking-widest">Mes Documents Archivés</h3>
+            <h3 className="font-bold uppercase text-sm text-gray-500 tracking-widest border-b pb-2 mb-4">Mes Documents Officiels</h3>
             {myActes.length > 0 ? (
               <div className="space-y-3">
                 {myActes.map(a => (
-                  <div key={a.id_acte} className="p-4 border rounded-xl flex justify-between items-center bg-gray-50 hover:bg-green-50 transition-colors">
-                    <div><p className="font-bold text-gray-900">{a.type_acte}</p><p className="text-xs text-gray-500">{a.date_acte} • Registre {a.numero_registre}</p></div>
-                    <button onClick={() => window.open(`/api/actes/${a.id_acte}/pdf`, '_blank')} className="bg-white p-2 rounded-lg text-green-700 shadow-sm border border-green-100 hover:bg-green-700 hover:text-white transition-all"><Download size={20}/></button>
+                  <div key={a.id_acte} className="p-4 border rounded-xl flex justify-between items-center bg-slate-50 hover:bg-green-50 transition-colors group">
+                    <div>
+                        <p className="font-bold text-gray-900 capitalize text-sm">Acte de {a.type_acte.toLowerCase()}</p>
+                        <p className="text-[10px] text-gray-400 font-medium">{a.date_acte} • N° {a.numero_registre}</p>
+                    </div>
+                    <button onClick={() => window.open(`/api/actes/${a.id_acte}/pdf`, '_blank')} className="bg-white p-2 rounded-lg text-green-700 shadow-xs border border-green-100 group-hover:bg-green-700 group-hover:text-white transition-all"><Download size={18}/></button>
                   </div>
                 ))}
               </div>
-            ) : <p className="text-gray-400 italic text-center py-8">Aucun acte trouvé dans les archives pour ce profil.</p>}
+            ) : (
+                <div className="flex flex-col items-center justify-center py-10 opacity-40">
+                    <FileText size={40} className="text-slate-300" />
+                    <p className="text-xs italic mt-2">Aucun acte numérique disponible</p>
+                </div>
+            )}
+          </div>
+          <div className="bg-white p-6 rounded-xl border shadow-sm">
+            <h3 className="font-bold uppercase text-sm text-gray-500 tracking-widest border-b pb-2 mb-4">Demander un Acte</h3>
+            <form onSubmit={async (e) => {
+                e.preventDefault();
+                const type = e.target.type_acte.value;
+                try {
+                    await api.post('/actes-demandes', { id_citoyen: profile.id_citoyen, type_acte: type });
+                    alert('Demande envoyée avec succès !');
+                } catch (err) {
+                    alert('Erreur lors de la demande.');
+                }
+            }} className="space-y-4">
+                <select name="type_acte" className="w-full border rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-green-500 outline-none">
+                    <option value="NAISSANCE">Acte de Naissance</option>
+                    <option value="MARIAGE">Acte de Mariage</option>
+                </select>
+                <button type="submit" className="w-full bg-green-700 text-white py-2 rounded-xl font-bold hover:bg-green-800">
+                    Soumettre la demande
+                </button>
+            </form>
           </div>
         </div>
       )}

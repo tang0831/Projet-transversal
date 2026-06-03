@@ -5,7 +5,6 @@ class BoyerMoore:
         self.bad_char = self.precompute_bad_char()
 
     def precompute_bad_char(self):
-
         bad_char = {}
         for i in range(self.m):
             bad_char[self.pattern[i]] = i
