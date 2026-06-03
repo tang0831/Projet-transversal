@@ -3,7 +3,6 @@ import {
   Users, MapPin, FileText, LogOut, Search, Plus, Trash2, Download, ShieldCheck, User as UserIcon, Menu, X, Pencil, MessageSquare, Home as HomeIcon
 } from 'lucide-react';
 import api from './api';
-import { Trie } from './Trie';
 import Forum from './components/Forum';
 import Home from './components/Home';
 import LegacyHome from './components/LegacyHome';
@@ -444,6 +443,7 @@ const Citoyens = ({ user }) => {
           <table className="w-full text-left min-w-[700px]">
             <thead className="bg-gray-50 border-b">
               <tr>
+                <th className="p-4 text-xs font-bold uppercase tracking-wider">ID</th>
                 <th className="p-4 text-xs font-bold uppercase tracking-wider">Nom complet</th>
                 <th className="p-4 text-xs font-bold uppercase tracking-wider">CIN</th>
                 <th className="p-4 text-xs font-bold uppercase tracking-wider text-center">Statut</th>
@@ -453,6 +453,7 @@ const Citoyens = ({ user }) => {
             <tbody>
               {list.map(c => (
                 <tr key={c.id_citoyen} className="border-b hover:bg-gray-50 transition-colors">
+                  <td className="p-4 text-xs font-mono text-gray-400">#{c.id_citoyen}</td>
                   <td className="p-4">
                     <div className="font-bold text-sm">{c.nom}</div>
                     <div className="text-[10px] text-gray-500 font-medium">{c.prenom}</div>
@@ -486,6 +487,8 @@ const Actes = ({ user }) => {
   const [list, setList] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({ type_acte: 'NAISSANCE', date_acte: '', numero_registre: '', id_citoyen: '' });
+  const [citoyenSearch, setCitoyenSearch] = useState('');
+  const [citoyenSuggestions, setCitoyenSuggestions] = useState([]);
 
   const fetchList = async () => {
     try {
@@ -502,6 +505,23 @@ const Actes = ({ user }) => {
 
   useEffect(() => { fetchList(); }, [user]);
 
+  const handleCitoyenSearch = async (text) => {
+    setCitoyenSearch(text);
+    if (text.length >= 2) {
+      try {
+        const res = await api.get(`/citoyens/autocomplete?prefix=${text}`);
+        setCitoyenSuggestions(res.data.map(item => item[1]));
+      } catch (e) { console.error(e); }
+    } else {
+      setCitoyenSuggestions([]);
+    }
+  };
+
+  const selectCitoyen = (c) => {
+    setForm({ ...form, id_citoyen: c.id });
+    setCitoyenSearch(c.display);
+    setCitoyenSuggestions([]);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -513,6 +533,7 @@ const Actes = ({ user }) => {
       }
       setEditingId(null);
       setForm({ type_acte: 'NAISSANCE', date_acte: '', numero_registre: '', id_citoyen: '' });
+      setCitoyenSearch('');
       fetchList();
     } catch (e) { console.error(e); }
   };
@@ -542,7 +563,37 @@ const Actes = ({ user }) => {
             </select>
             <input type="date" value={form.date_acte} onChange={e => setForm({...form, date_acte: e.target.value})} required className="border p-2 rounded-lg text-sm" />
             <input placeholder="N° Registre" value={form.numero_registre} onChange={e => setForm({...form, numero_registre: e.target.value})} required className="border p-2 rounded-lg text-sm" />
-            <input placeholder="ID Citoyen" value={form.id_citoyen} onChange={e => setForm({...form, id_citoyen: e.target.value})} required className="border p-2 rounded-lg text-sm" />
+            <div className="relative">
+              <input 
+                placeholder="Chercher Citoyen (Nom/CIN)..." 
+                value={citoyenSearch} 
+                onChange={e => handleCitoyenSearch(e.target.value)} 
+                required 
+                className="border p-2 rounded-lg text-sm w-full focus:ring-2 focus:ring-green-500 outline-none" 
+              />
+              {citoyenSuggestions.length > 0 && (
+                <div className="absolute z-50 bg-white border border-gray-300 w-full mt-1 rounded-lg shadow-xl overflow-hidden">
+                  {citoyenSuggestions.map((s, i) => (
+                    <div 
+                      key={i} 
+                      className="p-3 cursor-pointer hover:bg-green-50 flex items-center gap-3 border-b last:border-b-0" 
+                      onClick={() => selectCitoyen(s)}
+                    >
+                      <div className="bg-green-100 p-1.5 rounded-lg text-green-700"><UserIcon size={14}/></div>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold">{s.display}</span>
+                        <span className="text-[10px] text-gray-400 font-mono">ID: #{s.id}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {form.id_citoyen && (
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 bg-green-100 text-green-700 px-2 py-0.5 rounded text-[10px] font-bold">
+                   <ShieldCheck size={10}/> ID: {form.id_citoyen}
+                </div>
+              )}
+            </div>
             <div className="flex gap-2 sm:col-span-2 md:col-span-1">
               <button type="submit" className="bg-green-700 text-white p-2 rounded-lg font-bold flex-1 shadow-md hover:bg-green-800 text-sm">Indexer</button>
               {editingId && <button type="button" onClick={() => {setEditingId(null); setForm({type_acte:'NAISSANCE',date_acte:'',numero_registre:'',id_citoyen:''})}} className="bg-gray-200 p-2 rounded-lg font-bold flex-1 text-gray-700 text-sm">Annuler</button>}
@@ -591,7 +642,7 @@ const Actes = ({ user }) => {
 };
 
 // --- MY ACCOUNT MODULE ---
-const MyAccount = ({ user }) => {
+const MyAccount = ({ user, setActiveTab }) => {
   const [myActes, setMyActes] = useState([]);
   const [profile, setProfile] = useState({ 
     nom: '', mot_de_passe: '', role: '', id_localite: null, photo: null,
@@ -808,24 +859,20 @@ const MyAccount = ({ user }) => {
           </div>
           <div className="bg-white p-6 rounded-xl border shadow-sm">
             <h3 className="font-bold uppercase text-sm text-gray-500 tracking-widest border-b pb-2 mb-4">Demander un Acte</h3>
-            <form onSubmit={async (e) => {
-                e.preventDefault();
-                const type = e.target.type_acte.value;
-                try {
-                    await api.post('/actes-demandes', { id_citoyen: profile.id_citoyen, type_acte: type });
-                    alert('Demande envoyée avec succès !');
-                } catch (err) {
-                    alert('Erreur lors de la demande.');
-                }
-            }} className="space-y-4">
-                <select name="type_acte" className="w-full border rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-green-500 outline-none">
-                    <option value="NAISSANCE">Acte de Naissance</option>
-                    <option value="MARIAGE">Acte de Mariage</option>
-                </select>
-                <button type="submit" className="w-full bg-green-700 text-white py-2 rounded-xl font-bold hover:bg-green-800">
-                    Soumettre la demande
+            <div className="space-y-4">
+                <p className="text-xs text-gray-500 leading-relaxed">
+                    Pour toute demande d'acte officiel (Naissance, Mariage, Décès), veuillez vous rendre sur le portail de demandes centralisé.
+                </p>
+                <button 
+                    onClick={() => {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        setActiveTab('forum');
+                    }} 
+                    className="w-full bg-[#007A33] text-white py-3 rounded-xl font-bold hover:bg-[#00642a] transition-all shadow-md flex items-center justify-center gap-2"
+                >
+                    <MessageSquare size={18} /> Accéder au Portail de Demandes
                 </button>
-            </form>
+            </div>
           </div>
         </div>
       )}
@@ -992,7 +1039,7 @@ const App = () => {
             {activeTab === 'citoyens' && <Citoyens user={user} />}
             {activeTab === 'actes' && <Actes user={user} />}
             {activeTab === 'forum' && <Forum user={user} />}
-            {activeTab === 'account' && <MyAccount user={user} />}
+            {activeTab === 'account' && <MyAccount user={user} setActiveTab={setActiveTab} />}
           </div>
         </div>
       </main>

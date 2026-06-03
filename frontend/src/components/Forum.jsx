@@ -40,7 +40,7 @@ const Forum = ({ user }) => {
 
   const fetchData = async () => {
     try {
-      const district = user?.district || "Analamanga";
+      const district = user?.nom_commune || user?.district || "Analamanga";
       const msgRes = await api.get(`/forum/messages?district=${district}`);
       setMessages(msgRes.data);
 
@@ -61,6 +61,53 @@ const Forum = ({ user }) => {
     return () => clearInterval(interval);
   }, [user, isAgent]);
 
+  // Pré-remplissage automatique du formulaire si l'utilisateur est un citoyen
+  useEffect(() => {
+    const uid = user?.id_utilisateur || user?.id;
+    if (!isAgent && showDemandeForm && uid) {
+      if (typeActe === "NAISSANCE") {
+        const fetchUserProfile = async () => {
+          try {
+            const res = await api.get(`/users/${uid}`);
+            const p = res.data;
+            setFormData({
+              nom_complet: `${p.nom || ""} ${p.prenom || ""}`.trim(),
+              date_naissance: p.date_naissance || "",
+              lieu_naissance: p.lieu_naissance || "",
+              nom_pere: `${p.nom_pere || ""} ${p.prenom_pere || ""}`.trim() || p.nom_pere || "",
+              prof_pere: p.prof_pere || "",
+              date_nais_pere: p.date_nais_pere || "",
+              nom_mere: `${p.nom_mere || ""} ${p.prenom_mere || ""}`.trim() || p.nom_mere || "",
+              prof_mere: p.prof_mere || "",
+              date_nais_mere: p.date_nais_mere || "",
+              adresse: p.adresse || "",
+              profession_demandeur: p.profession || ""
+            });
+          } catch (e) {
+            console.error("Erreur lors du pré-remplissage:", e);
+          }
+        };
+        fetchUserProfile();
+      } else {
+        // Pour les autres types, on peut au moins pré-remplir l'adresse et la profession
+        setFormData(prev => ({
+          ...prev,
+          nom_complet: "",
+          date_naissance: "",
+          lieu_naissance: "",
+          nom_pere: "",
+          prof_pere: "",
+          date_nais_pere: "",
+          nom_mere: "",
+          prof_mere: "",
+          date_nais_mere: "",
+          // On garde l'adresse et la profession du demandeur si elles sont connues
+        }));
+        // On pourrait aussi fetcher ici si on voulait être exhaustif
+      }
+    }
+  }, [showDemandeForm, typeActe, isAgent, user]);
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
@@ -68,6 +115,7 @@ const Forum = ({ user }) => {
       await api.post("/forum/messages", {
         id_utilisateur: user.id_utilisateur,
         contenu: newMessage,
+        district: user?.nom_commune || user?.district || "Analamanga"
       });
       setNewMessage("");
       fetchData();
@@ -177,7 +225,7 @@ const Forum = ({ user }) => {
             <div className="flex items-center gap-2">
               <MessageSquare className="text-[#007A33] w-5 h-5" />
               <h3 className="font-bold uppercase text-xs tracking-wider text-slate-700">
-                Forum ({user?.district || "Analamanga"})
+                Forum ({user?.nom_commune || user?.district || "Analamanga"})
               </h3>
             </div>
 
@@ -311,36 +359,73 @@ const Forum = ({ user }) => {
               </select>
 
               <div className="space-y-2">
-                <input placeholder="Nom complet" value={formData.nom_complet} onChange={e => setFormData({...formData, nom_complet: e.target.value})} className="w-full border rounded-lg p-2 text-xs" required />
-                <div className="flex gap-2">
-                  <input type="date" value={formData.date_naissance} onChange={e => setFormData({...formData, date_naissance: e.target.value})} className="flex-1 border rounded-lg p-2 text-xs" required />
-                  <input placeholder="Lieu de naissance" value={formData.lieu_naissance} onChange={e => setFormData({...formData, lieu_naissance: e.target.value})} className="flex-1 border rounded-lg p-2 text-xs" required />
-                </div>
-                
-                <p className="text-[10px] font-black text-slate-400 uppercase mt-2">Information du Père</p>
-                <input placeholder="Nom du père" value={formData.nom_pere} onChange={e => setFormData({...formData, nom_pere: e.target.value})} className="w-full border rounded-lg p-2 text-xs" />
-                <div className="flex gap-2">
-                  <input type="date" value={formData.date_nais_pere} onChange={e => setFormData({...formData, date_nais_pere: e.target.value})} className="flex-1 border rounded-lg p-2 text-xs" title="Date de naissance du père" />
-                  <input placeholder="Profession père" value={formData.prof_pere} onChange={e => setFormData({...formData, prof_pere: e.target.value})} className="flex-1 border rounded-lg p-2 text-xs" />
-                </div>
+                {typeActe === "NAISSANCE" ? (
+                  <div className="bg-white/50 p-4 rounded-xl border border-green-100 space-y-3 text-xs">
+                    <div className="flex justify-between items-center border-b border-green-50 pb-2">
+                      <span className="text-slate-400 font-bold uppercase tracking-wider">Bénéficiaire</span>
+                      <span className="font-black text-slate-800">{formData.nom_complet}</span>
+                    </div>
+                    <div className="flex justify-between items-center border-b border-green-50 pb-2">
+                      <span className="text-slate-400 font-bold uppercase tracking-wider">Né(e) le</span>
+                      <span className="font-black text-slate-800">{formData.date_naissance} à {formData.lieu_naissance}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 pt-1">
+                      <div>
+                        <p className="text-[9px] text-slate-400 font-bold uppercase mb-1">Père</p>
+                        <p className={`font-bold truncate ${!formData.nom_pere ? 'text-red-500' : 'text-slate-700'}`}>{formData.nom_pere || 'Non renseigné'}</p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] text-slate-400 font-bold uppercase mb-1">Mère</p>
+                        <p className={`font-bold truncate ${!formData.nom_mere ? 'text-red-500' : 'text-slate-700'}`}>{formData.nom_mere || 'Non renseigné'}</p>
+                      </div>
+                    </div>
+                    {(!formData.date_naissance || !formData.nom_pere || !formData.nom_mere) ? (
+                        <div className="bg-red-50 p-2.5 rounded-lg border border-red-100 space-y-2">
+                            <p className="text-[10px] text-red-700 font-bold leading-tight">
+                                Votre identité numérique est incomplète. Veuillez compléter votre profil dans l'onglet 'Mon Compte'.
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="bg-amber-50 p-2 rounded-lg border border-amber-100 text-[10px] text-amber-800 font-medium leading-tight">
+                            Ces informations sont extraites de votre profil officiel. En cliquant sur "Confirmer", vous générez une demande d'extrait certifié.
+                        </div>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    <input placeholder="Nom complet" value={formData.nom_complet} onChange={e => setFormData({...formData, nom_complet: e.target.value})} className="w-full border rounded-lg p-2 text-xs" required />
+                    <div className="flex gap-2">
+                      <input type="date" value={formData.date_naissance} onChange={e => setFormData({...formData, date_naissance: e.target.value})} className="flex-1 border rounded-lg p-2 text-xs" required />
+                      <input placeholder="Lieu de naissance" value={formData.lieu_naissance} onChange={e => setFormData({...formData, lieu_naissance: e.target.value})} className="flex-1 border rounded-lg p-2 text-xs" required />
+                    </div>
+                    
+                    <p className="text-[10px] font-black text-slate-400 uppercase mt-2">Information du Père</p>
+                    <input placeholder="Nom du père" value={formData.nom_pere} onChange={e => setFormData({...formData, nom_pere: e.target.value})} className="w-full border rounded-lg p-2 text-xs" />
+                    <div className="flex gap-2">
+                      <input type="date" value={formData.date_nais_pere} onChange={e => setFormData({...formData, date_nais_pere: e.target.value})} className="flex-1 border rounded-lg p-2 text-xs" title="Date de naissance du père" />
+                      <input placeholder="Profession père" value={formData.prof_pere} onChange={e => setFormData({...formData, prof_pere: e.target.value})} className="flex-1 border rounded-lg p-2 text-xs" />
+                    </div>
 
-                <p className="text-[10px] font-black text-slate-400 uppercase mt-2">Information de la Mère</p>
-                <input placeholder="Nom de la mère" value={formData.nom_mere} onChange={e => setFormData({...formData, nom_mere: e.target.value})} className="w-full border rounded-lg p-2 text-xs" />
-                <div className="flex gap-2">
-                  <input type="date" value={formData.date_nais_mere} onChange={e => setFormData({...formData, date_nais_mere: e.target.value})} className="flex-1 border rounded-lg p-2 text-xs" title="Date de naissance de la mère" />
-                  <input placeholder="Profession mère" value={formData.prof_mere} onChange={e => setFormData({...formData, prof_mere: e.target.value})} className="flex-1 border rounded-lg p-2 text-xs" />
-                </div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase mt-2">Information de la Mère</p>
+                    <input placeholder="Nom de la mère" value={formData.nom_mere} onChange={e => setFormData({...formData, nom_mere: e.target.value})} className="w-full border rounded-lg p-2 text-xs" />
+                    <div className="flex gap-2">
+                      <input type="date" value={formData.date_nais_mere} onChange={e => setFormData({...formData, date_nais_mere: e.target.value})} className="flex-1 border rounded-lg p-2 text-xs" title="Date de naissance de la mère" />
+                      <input placeholder="Profession mère" value={formData.prof_mere} onChange={e => setFormData({...formData, prof_mere: e.target.value})} className="flex-1 border rounded-lg p-2 text-xs" />
+                    </div>
 
-                <p className="text-[10px] font-black text-slate-400 uppercase mt-2">Autres détails</p>
-                <input placeholder="Adresse de domicile" value={formData.adresse} onChange={e => setFormData({...formData, adresse: e.target.value})} className="w-full border rounded-lg p-2 text-xs" required />
-                <input placeholder="Votre profession" value={formData.profession_demandeur} onChange={e => setFormData({...formData, profession_demandeur: e.target.value})} className="w-full border rounded-lg p-2 text-xs" />
+                    <p className="text-[10px] font-black text-slate-400 uppercase mt-2">Autres détails</p>
+                    <input placeholder="Adresse de domicile" value={formData.adresse} onChange={e => setFormData({...formData, adresse: e.target.value})} className="w-full border rounded-lg p-2 text-xs" required />
+                    <input placeholder="Votre profession" value={formData.profession_demandeur} onChange={e => setFormData({...formData, profession_demandeur: e.target.value})} className="w-full border rounded-lg p-2 text-xs" />
+                  </>
+                )}
               </div>
 
               <button
                 type="submit"
-                className="w-full bg-[#007A33] text-white py-2 rounded-lg text-xs font-bold uppercase tracking-wider shadow-md hover:bg-[#00642a] transition-all"
+                disabled={typeActe === "NAISSANCE" && (!formData.date_naissance || !formData.nom_pere || !formData.nom_mere)}
+                className="w-full bg-[#007A33] text-white py-2 rounded-lg text-xs font-bold uppercase tracking-wider shadow-md hover:bg-[#00642a] transition-all disabled:opacity-30 disabled:grayscale"
               >
-                Soumettre le dossier
+                {typeActe === "NAISSANCE" ? "Confirmer la demande" : "Soumettre le dossier"}
               </button>
             </form>
           )}
@@ -358,7 +443,7 @@ const Forum = ({ user }) => {
 
               return (
                 <div
-                  key={d.id}
+                  key={d.id_demande}
                   className="p-3.5 border border-slate-100 bg-slate-50/40 rounded-xl hover:bg-white hover:border-slate-200 transition-all shadow-xs group"
                 >
                   <div className="flex justify-between items-start mb-2">
@@ -393,7 +478,7 @@ const Forum = ({ user }) => {
                   {!isAgent && d.statut === "VALIDEE" && (
                     <button
                       onClick={() =>
-                        window.open(`/api/actes/${d.id}/pdf?user_id=${user.id_utilisateur}`, '_blank')
+                        window.open(`/api/actes/${d.id_demande}/pdf?user_id=${user.id_utilisateur}`, '_blank')
                       }
                       className="mt-2 w-full bg-slate-100 hover:bg-[#007A33]/10 hover:text-[#007A33] text-slate-600 font-bold text-xs py-1.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all"
                     >
@@ -406,13 +491,13 @@ const Forum = ({ user }) => {
                   {isAgent && d.statut === "EN_ATTENTE" && (
                     <div className="flex gap-2 mt-3 pt-2.5 border-t border-slate-100">
                       <button
-                        onClick={() => handleUpdateStatus(d.id, "VALIDEE")}
+                        onClick={() => handleUpdateStatus(d.id_demande, "VALIDEE")}
                         className="flex-1 bg-green-600 text-white py-1 rounded-lg flex justify-center hover:bg-green-700"
                       >
                         <CheckCircle size={14} />
                       </button>
                       <button
-                        onClick={() => handleUpdateStatus(d.id, "REJETEE")}
+                        onClick={() => handleUpdateStatus(d.id_demande, "REJETEE")}
                         className="flex-1 bg-red-600 text-white py-1 rounded-lg flex justify-center hover:bg-red-700"
                       >
                         <XCircle size={14} />
