@@ -369,7 +369,19 @@ def get_actes_a_valider():
         cursor.close()
         conn.close()
 
-@router.get("/actes/naissance/{cin}/pdf")
+@router.post("/admin/actes/{id_acte}/valider-officiel")
+def valider_acte_officiel(id_acte: int):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("UPDATE acte SET statut = 'OFFICIEL' WHERE id = %s", (id_acte,))
+        conn.commit()
+        return {"message": "Acte validé avec succès"}
+    finally:
+        cursor.close()
+        conn.close()
+
+@router.post("/actes/mariage/valider")
 def generate_birth_act_pdf(cin: str):
     data = get_acte_naissance(cin)
     seal_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../frontend/public/Seal_of_Madagascar.svg.png"))
