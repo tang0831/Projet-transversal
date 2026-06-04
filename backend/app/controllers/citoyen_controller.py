@@ -104,11 +104,21 @@ def update_citoyen(cin: str, citoyen: CitoyenSchema):
 @router.delete("/citoyens/{cin}")
 def delete_citoyen(cin: str):
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     try:
-        cursor.execute("DELETE FROM citoyen WHERE numero_cin = %s", (cin,))
+        cursor.execute("SELECT id FROM citoyen WHERE numero_cin = %s", (cin,))
+        citoyen = cursor.fetchone()
+        if not citoyen:
+            raise HTTPException(status_code=404, detail="Citoyen non trouvé")
+        
+        # Supprimer les dépendances (actes)
+        cursor.execute("DELETE FROM acte WHERE id_citoyen = %s", (citoyen['id'],))
+        
+        # Supprimer le citoyen
+        cursor.execute("DELETE FROM citoyen WHERE id = %s", (citoyen['id'],))
+        
         conn.commit()
-        return {"message": "Citoyen supprimé"}
+        return {"message": "Citoyen et ses actes supprimés"}
     finally:
         cursor.close()
         conn.close()
