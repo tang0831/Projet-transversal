@@ -91,10 +91,13 @@ export default function Dashboard() {
   };
 
   const handleViewMariage = () => {
+    console.log("Clic bouton Mariage. selectedMariage:", selectedMariage);
     if (selectedMariage) {
+      console.log("Statut mariage:", selectedMariage.statut);
       if (selectedMariage.statut === "OFFICIEL") setShowMariageModal(true);
       else alert(`Demande en cours : ${selectedMariage.statut.replace(/_/g, " ")}`);
     } else {
+      console.log("Pas de mariage, affichage formulaire.");
       setShowDeclareForm(true);
     }
   };
@@ -329,7 +332,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Modal Mariage */}
+      {/* Modal Déclaration Mariage */}
       {showDeclareForm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-gray-900/60 backdrop-blur-sm">
           <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden p-8">
@@ -373,6 +376,17 @@ export default function Dashboard() {
                 Annuler
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Affichage Mariage */}
+      {showMariageModal && selectedMariage && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-gray-900/60 backdrop-blur-sm">
+          <div className="bg-white p-8 rounded-[2rem] shadow-2xl w-full max-w-lg">
+            <h3 className="font-black text-xl mb-4">Acte de Mariage N°{selectedMariage.numero_acte}</h3>
+            <p>Statut : {selectedMariage.statut}</p>
+            <button onClick={() => setShowMariageModal(false)} className="mt-4 bg-gray-900 text-white p-3 rounded-xl">Fermer</button>
           </div>
         </div>
       )}
