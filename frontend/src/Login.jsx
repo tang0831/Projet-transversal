@@ -45,9 +45,9 @@ function Login() {
           <div className="relative z-10">
             <div className="w-20 h-20 bg-white rounded-3xl shadow-xl shadow-vert/10 flex items-center justify-center mb-8">
               <img 
-                src="/21808444-agitant-drapeau-de-madagascar-sur-mat-de-drapeau-modele-pour-independance-journee-vectoriel.webp" 
-                alt="Drapeau Madagascar" 
-                className="w-12 h-12 object-contain"
+                src="/Seal_of_Madagascar.svg.png" 
+                alt="Logo" 
+                className="w-14 h-14 object-contain"
               />
             </div>
             <h1 className="text-4xl font-black text-gray-900 tracking-tighter mb-4">

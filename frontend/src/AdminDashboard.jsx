@@ -46,7 +46,10 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-gray-50 flex font-sans">
       <aside className="w-64 bg-white border-r border-gray-100 flex flex-col">
         <div className="p-8">
-            <div className="text-2xl font-black text-vert tracking-tighter">TOKANA-ID</div>
+            <div className="flex items-center gap-3">
+                <img src="/Seal_of_Madagascar.svg.png" alt="Logo" className="w-10 h-10" />
+                <div className="text-2xl font-black text-vert tracking-tighter">TOKANA-ID</div>
+            </div>
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Administration</p>
         </div>
         <nav className="flex-1 px-4 space-y-2">

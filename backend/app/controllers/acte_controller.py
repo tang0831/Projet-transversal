@@ -25,7 +25,7 @@ def get_parents(citoyen_id):
     cursor.close()
     conn.close()
     return {
-        "pere": next((p for p in parents if p['type_lien'] == 'PÈRE'), None),
+        "pere": next p in parents if p['type_lien'] == 'PÈRE'), None),
         "mere": next((p for p in parents if p['type_lien'] == 'MÈRE'), None)
     }
 
@@ -95,6 +95,8 @@ class BirthDeclarationSchema(BaseModel):
     heure_naissance: Optional[str] = "08:00"
     lieu_naissance: str
     sexe: str
+    cin_pere: Optional[str] = None
+    cin_mere: Optional[str] = None
 
 class MarriageDeclarationSchema(BaseModel):
     numero_cin_demandeur: str
@@ -106,22 +108,40 @@ class MarriageDeclarationSchema(BaseModel):
 @router.post("/actes/naissance/declarer")
 def declarer_naissance(data: BirthDeclarationSchema):
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     try:
+        # 1. Créer le citoyen
         cursor.execute("INSERT INTO citoyen (numero_cin, nom, prenom, date_naissance, lieu_naissance, sexe) VALUES (%s, %s, %s, %s, %s, %s)",
                        (data.numero_cin, data.nom, data.prenom, data.date_naissance, data.lieu_naissance, data.sexe))
         id_citoyen = cursor.lastrowid
-        
+
+        # 2. Créer l'acte de naissance
         cursor.execute(
             "INSERT INTO acte (id_citoyen, type_acte, statut) VALUES (%s, 'NAISSANCE', 'OFFICIEL')",
             (id_citoyen,)
         )
+
+        # 3. Ajouter les liens de parenté si CIN fournis
+        if data.cin_pere:
+            cursor.execute("SELECT id FROM citoyen WHERE numero_cin = %s", (data.cin_pere,))
+            pere = cursor.fetchone()
+            if pere:
+                cursor.execute("INSERT INTO Lien_Parente (id_parent, id_enfant, type_lien) VALUES (%s, %s, 'PÈRE')", (pere['id'], id_citoyen))
+
+        if data.cin_mere:
+            cursor.execute("SELECT id FROM citoyen WHERE numero_cin = %s", (data.cin_mere,))
+            mere = cursor.fetchone()
+            if mere:
+                cursor.execute("INSERT INTO Lien_Parente (id_parent, id_enfant, type_lien) VALUES (%s, %s, 'MÈRE')", (mere['id'], id_citoyen))
+
         conn.commit()
-        return {"message": "Naissance déclarée et acte généré automatiquement"}
+        return {"message": "Naissance déclarée et liens de parenté créés"}
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
     finally:
         cursor.close()
         conn.close()
-
 @router.post("/actes/mariage/declarer")
 def declarer_mariage(data: MarriageDeclarationSchema):
     conn = get_db_connection()
@@ -131,16 +151,16 @@ def declarer_mariage(data: MarriageDeclarationSchema):
         demandeur = cursor.fetchone()
         cursor.execute("SELECT id FROM citoyen WHERE numero_cin = %s", (data.numero_cin_conjoint,))
         conjoint = cursor.fetchone()
-        
+
         if not demandeur or not conjoint:
             raise HTTPException(status_code=404, detail="Citoyen non trouvé")
-            
+
         cursor.execute(
             "INSERT INTO acte (id_citoyen, type_acte, statut) VALUES (%s, 'MARIAGE', 'EN_ATTENTE_CONJOINT')",
             (demandeur['id'],)
         )
         id_acte = cursor.lastrowid
-        
+
         cursor.execute(
             "INSERT INTO mariage (id_acte, id_epoux, id_epouse, date_mariage, lieu_mariage, regime_matrimonial) VALUES (%s, %s, %s, %s, %s, %s)",
             (id_acte, demandeur['id'], conjoint['id'], data.date_mariage, data.lieu_mariage, data.regime)
@@ -160,7 +180,7 @@ def get_pending_marriage_requests(cin: str):
         citoyen = cursor.fetchone()
         if not citoyen:
             raise HTTPException(status_code=404, detail="Citoyen non trouvé")
-            
+
         query = """
             SELECT m.*, a.id as id_acte, c1.nom as nom_demandeur, c1.prenom as prenom_demandeur
             FROM mariage m
@@ -183,13 +203,13 @@ def declarer_deces(data: DeathDeclarationSchema, requester_cin: str):
         deceased = cursor.fetchone()
         if not deceased:
             raise HTTPException(status_code=404, detail="Citoyen non trouvé")
-            
+
         cursor.execute(
             "INSERT INTO acte (id_citoyen, type_acte, statut) VALUES (%s, 'DECES', 'EN_ATTENTE_OFFICIER')",
             (deceased[0],)
         )
         id_acte = cursor.lastrowid
-        
+
         cursor.execute(
             "INSERT INTO deces (id_acte, id_citoyen, date_deces, lieu_deces, cause_deces) VALUES (%s, %s, %s, %s, %s)",
             (id_acte, deceased[0], data.date_deces, data.lieu_deces, data.cause_deces)
@@ -204,7 +224,7 @@ def declarer_deces(data: DeathDeclarationSchema, requester_cin: str):
 def get_acte_naissance(cin: str):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-    
+
     try:
         query_citoyen = """
             SELECT c.*, a.id as numero_acte, a.date_enregistrement as date_declaration
@@ -214,10 +234,10 @@ def get_acte_naissance(cin: str):
         """
         cursor.execute(query_citoyen, (cin,))
         citoyen = cursor.fetchone()
-        
+
         if not citoyen:
             raise HTTPException(status_code=404, detail="Acte de naissance non trouvé pour ce CIN")
-            
+
         query_parents = """
             SELECT c.nom, c.prenom, c.date_naissance, c.lieu_naissance, c.profession, c.domicile, c.numero_cin, lp.type_lien
             FROM Lien_Parente lp
@@ -226,13 +246,13 @@ def get_acte_naissance(cin: str):
         """
         cursor.execute(query_parents, (citoyen['id'],))
         parents = cursor.fetchall()
-        
+
         pere = next((p for p in parents if p['type_lien'] == 'PÈRE'), None)
         mere = next((p for p in parents if p['type_lien'] == 'MÈRE'), None)
-        
+
         if pere: pere['date_naissance'] = str(pere['date_naissance'])
         if mere: mere['date_naissance'] = str(mere['date_naissance'])
-        
+
         return {
             "numero_acte": citoyen['numero_acte'],
             "nom": citoyen['nom'],
@@ -254,13 +274,13 @@ def get_acte_naissance(cin: str):
 def get_acte_mariage(cin: str):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-    
+
     try:
         cursor.execute("SELECT id FROM citoyen WHERE numero_cin = %s", (cin,))
         citoyen = cursor.fetchone()
         if not citoyen:
             raise HTTPException(status_code=404, detail="Citoyen non trouvé")
-            
+
         query = """
             SELECT m.*, a.id as id_acte, a.id as numero_acte, a.statut, a.id_citoyen as id_demandeur,
                    c1.id as id_epoux, c1.nom as nom_epoux, c1.prenom as prenom_epoux, c1.profession as prof_epoux, c1.domicile as dom_epoux, c1.numero_cin as cin_epoux,
@@ -273,10 +293,10 @@ def get_acte_mariage(cin: str):
         """
         cursor.execute(query, (citoyen['id'], citoyen['id']))
         mariage = cursor.fetchone()
-        
+
         if not mariage:
             raise HTTPException(status_code=404, detail="Acte de mariage non trouvé")
-            
+
         return {
             "id_acte": mariage['id_acte'],
             "numero_acte": mariage['numero_acte'],
@@ -315,7 +335,7 @@ def list_accessible_death_acts(cin: str):
         cursor.execute("SELECT id FROM citoyen WHERE numero_cin = %s", (cin,))
         requester = cursor.fetchone()
         if not requester: raise HTTPException(status_code=404, detail="Citoyen non trouvé")
-        
+
         query = """
             SELECT d.*, a.id as numero_acte, c.nom, c.prenom, c.numero_cin
             FROM deces d
@@ -335,6 +355,104 @@ def list_accessible_death_acts(cin: str):
         cursor.close()
         conn.close()
 
+@router.get("/actes/deces/{cin}/pdf")
+def generate_death_act_pdf(cin: str):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    # Fetch deceased info + parents
+    query = """
+        SELECT d.*, c.id as citoyen_id, c.nom, c.prenom, c.date_naissance, c.lieu_naissance, c.profession, c.domicile, c.sexe, a.id as numero_acte
+        FROM deces d
+        JOIN acte a ON d.id_acte = a.id
+        JOIN citoyen c ON d.id_citoyen = c.id
+        WHERE c.numero_cin = %s
+    """
+    cursor.execute(query, (cin,))
+    data = cursor.fetchone()
+
+    if not data:
+        cursor.close()
+        conn.close()
+        raise HTTPException(status_code=404, detail="Acte non trouvé")
+
+    parents = get_parents(data['citoyen_id'])
+    cursor.close()
+    conn.close()
+
+    seal_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../frontend/public/Seal_of_Madagascar.svg.png"))
+    buffer = io.BytesIO()
+    p = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+
+    # Background Seal
+    if os.path.exists(seal_path):
+        p.saveState()
+        p.setFillAlpha(0.03)
+        p.drawImage(seal_path, (width-18*cm)/2, (height-18*cm)/2, width=18*cm, height=18*cm, mask='auto')
+        p.restoreState()
+        p.drawImage(seal_path, (width-2.5*cm)/2, height - 3.5*cm, width=2.5*cm, height=2.5*cm, mask='auto')
+
+    p.setFont("Helvetica-Bold", 10)
+    p.drawCentredString(width/2, height - 4*cm, "REPOBLIKAN'I MADAGASIKARA")
+    p.setFont("Helvetica-Oblique", 7)
+    p.drawCentredString(width/2, height - 4.3*cm, "Fitiavana - Tanindrazana - Fandrosoana")
+
+    y = height - 6*cm
+    p.setFont("Helvetica-Bold", 16)
+    p.drawCentredString(width/2, y, "ACTE DE DÉCÈS")
+    y -= 1.5*cm
+
+    p.setFont("Helvetica-Bold", 12)
+    p.drawString(2*cm, y, f"ACTE N° {data['numero_acte']}")
+    y -= 1*cm
+
+    p.setFont("Helvetica", 11)
+    text_intro = f"Le citoyen {data['nom']} {data['prenom']}, de sexe {'Masculin' if data['sexe'] == 'M' else 'Féminin'},"
+    p.drawString(2.5*cm, y, text_intro)
+    y -= 0.6*cm
+    p.drawString(2.5*cm, y, f"né le {str(data['date_naissance'])} à {data['lieu_naissance']},")
+    y -= 0.6*cm
+    p.drawString(2.5*cm, y, f"exerçant la profession de {data['profession'] or 'Sans profession'},")
+    y -= 0.6*cm
+    p.drawString(2.5*cm, y, f"domicilié à {data['domicile'] or 'Non renseigné'},")
+    y -= 1.2*cm
+
+    p.setFont("Helvetica-Bold", 12)
+    p.drawString(2*cm, y, "EST DÉCÉDÉ")
+    y -= 0.8*cm
+    p.setFont("Helvetica", 11)
+    p.drawString(2.5*cm, y, f"Le {str(data['date_deces'])} à {data['lieu_deces']}.")
+    y -= 0.6*cm
+    if data['cause_deces']:
+        p.drawString(2.5*cm, y, f"Cause du décès : {data['cause_deces']}")
+    y -= 1.5*cm
+
+    p.setFont("Helvetica-Bold", 12)
+    p.drawString(2*cm, y, "FILIATION")
+    y -= 0.8*cm
+    p.setFont("Helvetica", 11)
+    pere = parents.get('pere')
+    mere = parents.get('mere')
+    pere_str = f"{pere['nom']} {pere['prenom']}" if pere else "Inconnu"
+    mere_str = f"{mere['nom']} {mere['prenom']}" if mere else "Inconnue"
+    p.drawString(2.5*cm, y, f"Fils/Fille de : {pere_str}")
+    y -= 0.6*cm
+    p.drawString(2.5*cm, y, f"Et de : {mere_str}")
+
+    # Signature box
+    p.setStrokeColor(colors.black)
+    p.rect(width - 7*cm, 2*cm, 5*cm, 3*cm)
+    p.setFont("Helvetica-Bold", 8)
+    p.drawCentredString(width - 4.5*cm, 4.5*cm, "SIGNÉ ÉLECTRONIQUEMENT")
+    p.drawCentredString(width - 4.5*cm, 4.1*cm, "SYSTÈME TOKANA-ID")
+    p.setFont("Helvetica", 7)
+    p.drawCentredString(width - 4.5*cm, 2.5*cm, "Document Officiel - État Civil")
+
+    p.showPage()
+    p.save()
+    buffer.seek(0)
+    return Response(content=buffer.getvalue(), media_type="application/pdf", headers={"Content-Disposition": f"inline; filename=acte_deces_{cin}.pdf"})
+
 @router.get("/actes/deces/{cin}/{requester_cin}", response_model=DeathActResponse)
 def get_acte_deces(cin: str, requester_cin: str):
     conn = get_db_connection()
@@ -343,7 +461,7 @@ def get_acte_deces(cin: str, requester_cin: str):
         # Vérification d'autorisation
         if not verify_access(cursor, requester_cin, cin):
             raise HTTPException(status_code=403, detail="Accès non autorisé à cet acte")
-            
+
         query = """
             SELECT d.*, a.id as numero_acte, c.nom, c.prenom
             FROM deces d
@@ -375,21 +493,21 @@ def verify_access(cursor, requester_cin, deceased_cin):
     cursor.execute("SELECT id FROM citoyen WHERE numero_cin = %s", (deceased_cin,))
     dec = cursor.fetchone()
     if not req or not dec: return False
-    
+
     query_mariage = """
-        SELECT 1 FROM mariage 
+        SELECT 1 FROM mariage
         WHERE (id_epoux = %s AND id_epouse = %s) OR (id_epoux = %s AND id_epouse = %s)
     """
     cursor.execute(query_mariage, (req['id'], dec['id'], dec['id'], req['id']))
     if cursor.fetchone(): return True
-    
+
     query_parente = """
-        SELECT 1 FROM Lien_Parente 
+        SELECT 1 FROM Lien_Parente
         WHERE (id_parent = %s AND id_enfant = %s) OR (id_parent = %s AND id_enfant = %s)
     """
     cursor.execute(query_parente, (req['id'], dec['id'], dec['id'], req['id']))
     if cursor.fetchone(): return True
-    
+
     return False
 
 @router.post("/actes/mariage/valider")
@@ -450,26 +568,26 @@ def generate_birth_act_pdf(cin: str):
         p.restoreState()
     if os.path.exists(seal_path):
         p.drawImage(seal_path, (width-2.5*cm)/2, height - 3.5*cm, width=2.5*cm, height=2.5*cm, mask='auto')
-    
+
     p.setFont("Helvetica-Bold", 10)
     p.drawCentredString(width/2, height - 4*cm, "REPOBLIKAN'I MADAGASIKARA")
     p.setFont("Helvetica-Oblique", 7)
     p.drawCentredString(width/2, height - 4.4*cm, "Fitiavana - Tanindrazana - Fandrosoana")
-    
+
     p.setFont("Helvetica-Bold", 18)
     p.drawCentredString(width/2, height - 6.5*cm, "COPIE D'ACTE DE NAISSANCE")
     p.setFont("Helvetica-Bold", 10)
     p.drawCentredString(width/2, height - 7.2*cm, f"EXTRAIT DU REGISTRE N° {data.get('numero_acte', 'N/A')}")
-    
+
     p.setFont("Helvetica", 11)
     y = height - 9*cm
-    
+
     p.setFont("Helvetica-Bold", 12)
     p.drawString(2*cm, y, "L'ENFANT")
     y -= 0.6*cm
     p.line(2*cm, y, 19*cm, y)
     y -= 0.8*cm
-    
+
     p.setFont("Helvetica", 11)
     p.drawString(2.5*cm, y, f"Nom & Prénoms : {data.get('nom', '')} {data.get('prenom', '')}")
     y -= 0.6*cm
@@ -479,56 +597,71 @@ def generate_birth_act_pdf(cin: str):
     y -= 0.6*cm
     p.drawString(2.5*cm, y, f"Sexe : {data.get('sexe', 'Non renseigné')}")
     y -= 1.5*cm
-    
+
     p.setFont("Helvetica-Bold", 12)
     p.drawString(2*cm, y, "FILIATION")
     y -= 0.6*cm
     p.line(2*cm, y, 19*cm, y)
     y -= 0.8*cm
-    
+
     p.setFont("Helvetica-Bold", 11)
     p.drawString(2.5*cm, y, "Père :")
     p.setFont("Helvetica", 11)
     pere = data.get('pere')
     if pere:
-        p.drawString(5*cm, y, f"{pere.get('nom', '')} {pere.get('prenom', '')}")
+        # data['pere'] can be a dict or a ParentInfo object depending on context
+        p_nom = pere.nom if hasattr(pere, 'nom') else pere.get('nom', '')
+        p_prenom = pere.prenom if hasattr(pere, 'prenom') else pere.get('prenom', '')
+        p_date = pere.date_naissance if hasattr(pere, 'date_naissance') else pere.get('date_naissance', 'N/A')
+        p_lieu = pere.lieu_naissance if hasattr(pere, 'lieu_naissance') else pere.get('lieu_naissance', 'N/A')
+        p_prof = pere.profession if hasattr(pere, 'profession') else pere.get('profession', 'N/A')
+        p_dom = pere.domicile if hasattr(pere, 'domicile') else pere.get('domicile', 'N/A')
+
+        p.drawString(5*cm, y, f"{p_nom} {p_prenom}")
         y -= 0.6*cm
-        p.drawString(5*cm, y, f"Né le {pere.get('date_naissance', 'N/A')} à {pere.get('lieu_naissance', 'N/A')}")
+        p.drawString(5*cm, y, f"Né le {p_date} à {p_lieu}")
         y -= 0.6*cm
-        p.drawString(5*cm, y, f"Profession : {pere.get('profession', 'N/A')}")
+        p.drawString(5*cm, y, f"Profession : {p_prof}")
         y -= 0.6*cm
-        p.drawString(5*cm, y, f"Domicile : {pere.get('domicile', 'N/A')}")
+        p.drawString(5*cm, y, f"Domicile : {p_dom}")
     else:
         p.drawString(5*cm, y, "Non renseigné")
     y -= 1*cm
-    
+
     p.setFont("Helvetica-Bold", 11)
     p.drawString(2.5*cm, y, "Mère :")
     p.setFont("Helvetica", 11)
     mere = data.get('mere')
     if mere:
-        p.drawString(5*cm, y, f"{mere.get('nom', '')} {mere.get('prenom', '')}")
+        m_nom = mere.nom if hasattr(mere, 'nom') else mere.get('nom', '')
+        m_prenom = mere.prenom if hasattr(mere, 'prenom') else mere.get('prenom', '')
+        m_date = mere.date_naissance if hasattr(mere, 'date_naissance') else mere.get('date_naissance', 'N/A')
+        m_lieu = mere.lieu_naissance if hasattr(mere, 'lieu_naissance') else mere.get('lieu_naissance', 'N/A')
+        m_prof = mere.profession if hasattr(mere, 'profession') else mere.get('profession', 'N/A')
+        m_dom = mere.domicile if hasattr(mere, 'domicile') else mere.get('domicile', 'N/A')
+
+        p.drawString(5*cm, y, f"{m_nom} {m_prenom}")
         y -= 0.6*cm
-        p.drawString(5*cm, y, f"Née le {mere.get('date_naissance', 'N/A')} à {mere.get('lieu_naissance', 'N/A')}")
+        p.drawString(5*cm, y, f"Née le {m_date} à {m_lieu}")
         y -= 0.6*cm
-        p.drawString(5*cm, y, f"Profession : {mere.get('profession', 'N/A')}")
+        p.drawString(5*cm, y, f"Profession : {m_prof}")
         y -= 0.6*cm
-        p.drawString(5*cm, y, f"Domicile : {mere.get('domicile', 'N/A')}")
+        p.drawString(5*cm, y, f"Domicile : {m_dom}")
     else:
         p.drawString(5*cm, y, "Non renseigné")
     y -= 2*cm
-    
+
     p.setFont("Helvetica-Bold", 11)
     p.drawString(2*cm, y, "MENTIONS ADMINISTRATIVES")
     y -= 0.6*cm
     p.line(2*cm, y, 19*cm, y)
     y -= 0.8*cm
-    
+
     p.setFont("Helvetica", 10)
     p.drawString(2.5*cm, y, f"Date de déclaration : {data.get('date_declaration', 'N/A')}")
     y -= 0.6*cm
     p.drawString(2.5*cm, y, f"Officier d'État Civil : {data.get('officier_etat_civil', 'RAKOTOMALALA Jean Pierre')}")
-    
+
     p.setStrokeColor(colors.black)
     p.rect(width - 7*cm, 2*cm, 5*cm, 3*cm)
     p.setFont("Helvetica-Bold", 8)
@@ -536,17 +669,17 @@ def generate_birth_act_pdf(cin: str):
     p.drawCentredString(width - 4.5*cm, 4.1*cm, "SYSTÈME TOKANA-ID")
     p.setFont("Helvetica", 7)
     p.drawCentredString(width - 4.5*cm, 2.5*cm, "Vérification possible via QR Code")
-    
+
     p.showPage()
     p.save()
-    
+
     buffer.seek(0)
     return Response(content=buffer.getvalue(), media_type="application/pdf", headers={"Content-Disposition": f"inline; filename=acte_naissance_{cin}.pdf"})
 
 @router.get("/actes/mariage/{cin}/pdf")
 def generate_marriage_act_pdf(cin: str):
     data = get_acte_mariage(cin)
-    
+
     # Vérification du statut avant génération
     if data['statut'] != 'OFFICIEL':
         raise HTTPException(status_code=403, detail="L'acte de mariage n'est pas encore validé officiellement.")
@@ -566,18 +699,18 @@ def generate_marriage_act_pdf(cin: str):
     p.drawCentredString(width/2, height - 4*cm, "REPOBLIKAN'I MADAGASIKARA")
     p.setFont("Helvetica-Oblique", 7)
     p.drawCentredString(width/2, height - 4.4*cm, "Fitiavana - Tanindrazana - Fandrosoana")
-    
+
     p.setFont("Helvetica-Bold", 18)
     p.drawCentredString(width/2, height - 6.5*cm, "ACTE DE MARIAGE")
     p.setFont("Helvetica-Bold", 10)
     p.drawCentredString(width/2, height - 7.2*cm, f"EXTRAIT DU REGISTRE N° {data['numero_acte']}")
-    
+
     p.setFont("Helvetica", 11)
     y = height - 9*cm
-    
+
     p.drawString(2*cm, y, f"Le {data['date_mariage']}, a été célébré à {data['lieu_mariage']} le mariage entre :")
     y -= 1.5*cm
-    
+
     p.setFont("Helvetica-Bold", 12)
     p.drawString(2*cm, y, "L'ÉPOUX")
     y -= 0.6*cm
@@ -590,7 +723,7 @@ def generate_marriage_act_pdf(cin: str):
     y -= 0.6*cm
     p.drawString(2.5*cm, y, f"Profession : {data['epoux']['profession']}")
     y -= 0.6*cm
-    
+
     pere_epoux = data['epoux_parents'].get('pere')
     mere_epoux = data['epoux_parents'].get('mere')
     if pere_epoux or mere_epoux:
@@ -611,7 +744,7 @@ def generate_marriage_act_pdf(cin: str):
     y -= 0.6*cm
     p.drawString(2.5*cm, y, f"Profession : {data['epouse']['profession']}")
     y -= 0.6*cm
-    
+
     pere_epouse = data['epouse_parents'].get('pere')
     mere_epouse = data['epouse_parents'].get('mere')
     if pere_epouse or mere_epouse:
@@ -619,25 +752,25 @@ def generate_marriage_act_pdf(cin: str):
         mere_nom = mere_epouse.get('nom', 'Inconnue') if mere_epouse else 'Inconnue'
         p.drawString(2.5*cm, y, f"Fille de : {pere_nom} et de {mere_nom}")
     y -= 2*cm
-    
+
     p.setFont("Helvetica-Bold", 11)
     p.drawString(2*cm, y, "RÉGIME MATRIMONIAL :")
     p.setFont("Helvetica", 11)
     p.drawString(7*cm, y, data['regime'])
     y -= 2*cm
-    
+
     p.setFont("Helvetica", 10)
     p.drawString(2.5*cm, y, f"Officier d'État Civil : {data['officier']}")
-    
+
     p.setStrokeColor(colors.black)
     p.rect(width - 7*cm, 2*cm, 5*cm, 3*cm)
     p.setFont("Helvetica-Bold", 8)
     p.drawCentredString(width - 4.5*cm, 4.5*cm, "SIGNÉ ÉLECTRONIQUEMENT")
     p.drawCentredString(width - 4.5*cm, 4.1*cm, "SYSTÈME TOKANA-ID")
-    
+
     p.showPage()
     p.save()
-    
+
     buffer.seek(0)
     return Response(
         content=buffer.getvalue(),
@@ -646,28 +779,3 @@ def generate_marriage_act_pdf(cin: str):
             "Content-Disposition": f"inline; filename=acte_mariage_{cin}.pdf"
         }
     )
-
-@router.get("/actes/deces/{cin}/pdf")
-def generate_death_act_pdf(cin: str):
-    # Désactivé temporairement pour la démo
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT d.*, c.nom, c.prenom FROM deces d JOIN acte a ON d.id_acte = a.id JOIN citoyen c ON d.id_citoyen = c.id WHERE c.numero_cin = %s", (cin,))
-    data = cursor.fetchone()
-    cursor.close()
-    conn.close()
-    
-    if not data:
-        raise HTTPException(status_code=404, detail="Acte non trouvé")
-
-    buffer = io.BytesIO()
-    p = canvas.Canvas(buffer, pagesize=A4)
-    # ... (logique PDF)
-    p.setFont("Helvetica-Bold", 16)
-    p.drawCentredString(width/2, height - 5*cm, "ACTE DE DÉCÈS")
-    p.setFont("Helvetica", 12)
-    p.drawString(2*cm, height - 7*cm, f"Le citoyen {data['nom']} {data['prenom']} est décédé le {str(data['date_deces'])} à {data['lieu_deces']}.")
-    p.showPage()
-    p.save()
-    buffer.seek(0)
-    return Response(content=buffer.getvalue(), media_type="application/pdf", headers={"Content-Disposition": f"inline; filename=acte_deces_{cin}.pdf"})

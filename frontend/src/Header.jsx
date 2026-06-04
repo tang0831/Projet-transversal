@@ -20,12 +20,10 @@ export default function Header() {
       <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
         {/* Logo */}
         <div 
-          className="flex items-center gap-2 cursor-pointer" 
+          className="flex items-center gap-3 cursor-pointer" 
           onClick={() => navigate('/')}
         >
-          <div className="w-10 h-10 bg-gradient-to-br from-vert to-vert-dark rounded-xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-vert/20">
-            T
-          </div>
+          <img src="/Seal_of_Madagascar.svg.png" alt="Logo" className="w-12 h-12" />
           <span className="text-2xl font-black text-gray-900 tracking-tighter">TOKANA-ID</span>
         </div>
 

@@ -17,7 +17,10 @@ export default function LandingPage() {
     <div className="min-h-screen bg-white">
       {/* Navbar */}
       <nav className="flex justify-between items-center py-6 px-12 border-b border-gray-100">
-        <div className="text-2xl font-black text-rouge tracking-tighter">TOKANA-ID</div>
+        <div className="flex items-center gap-3">
+          <img src="/Seal_of_Madagascar.svg.png" alt="Logo" className="w-10 h-10" />
+          <div className="text-2xl font-black text-rouge tracking-tighter">TOKANA-ID</div>
+        </div>
         <div className="flex items-center gap-6">
           <a href="#features" className="text-sm font-medium text-gray-600 hover:text-vert">Fonctionnalités</a>
           <button 

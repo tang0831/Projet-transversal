@@ -6,8 +6,8 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
           <div className="col-span-1 md:col-span-2">
-            <div className="flex items-center gap-2 mb-6">
-              <div className="w-8 h-8 bg-vert rounded-lg flex items-center justify-center text-white font-black text-lg">T</div>
+            <div className="flex items-center gap-3">
+              <img src="/Seal_of_Madagascar.svg.png" alt="Logo" className="w-8 h-8" />
               <span className="text-xl font-black text-gray-900 tracking-tighter">TOKANA-ID</span>
             </div>
             <p className="text-gray-500 text-sm leading-relaxed max-w-sm">
