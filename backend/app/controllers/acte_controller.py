@@ -364,7 +364,7 @@ def verify_access(cursor, requester_cin, deceased_cin):
     
     return False
 
-@router.post("/actes/mariage/valider_status")
+@router.post("/actes/mariage/valider")
 def valider_mariage(id_acte: int, cin_conjoint: str, action: str):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -408,7 +408,7 @@ def valider_acte_officiel(id_acte: int):
         cursor.close()
         conn.close()
 
-@router.post("/actes/mariage/valider_status")
+@router.get("/actes/naissance/{cin}/pdf")
 def generate_birth_act_pdf(cin: str):
     data = get_acte_naissance(cin)
     seal_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../frontend/public/Seal_of_Madagascar.svg.png"))
