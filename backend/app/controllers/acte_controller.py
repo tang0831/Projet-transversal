@@ -123,6 +123,29 @@ def declarer_mariage(data: MarriageDeclarationSchema):
         cursor.close()
         conn.close()
 
+@router.get("/actes/mariage/pending/{cin}")
+def get_pending_marriage_requests(cin: str):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("SELECT id FROM citoyen WHERE numero_cin = %s", (cin,))
+        citoyen = cursor.fetchone()
+        if not citoyen:
+            raise HTTPException(status_code=404, detail="Citoyen non trouvé")
+            
+        query = """
+            SELECT m.*, a.id as id_acte, c1.nom as nom_demandeur, c1.prenom as prenom_demandeur
+            FROM mariage m
+            JOIN acte a ON m.id_acte = a.id
+            JOIN citoyen c1 ON m.id_epoux = c1.id
+            WHERE m.id_epouse = %s AND a.statut = 'EN_ATTENTE_CONJOINT'
+        """
+        cursor.execute(query, (citoyen['id'],))
+        return cursor.fetchall()
+    finally:
+        cursor.close()
+        conn.close()
+
 @router.get("/actes/naissance/{cin}", response_model=BirthActResponse)
 def get_acte_naissance(cin: str):
     conn = get_db_connection()
@@ -313,6 +336,21 @@ def verify_access(cursor, requester_cin, deceased_cin):
     if cursor.fetchone(): return True
     
     return False
+
+@router.post("/actes/mariage/valider")
+def valider_mariage(id_acte: int, cin_conjoint: str, action: str):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        if action == 'ACCEPTER':
+            cursor.execute("UPDATE acte SET statut = 'EN_ATTENTE_OFFICIER' WHERE id = %s", (id_acte,))
+        else:
+            cursor.execute("UPDATE acte SET statut = 'REFUSE' WHERE id = %s", (id_acte,))
+        conn.commit()
+        return {"message": "Décision enregistrée"}
+    finally:
+        cursor.close()
+        conn.close()
 
 @router.get("/actes/naissance/{cin}/pdf")
 def generate_birth_act_pdf(cin: str):
