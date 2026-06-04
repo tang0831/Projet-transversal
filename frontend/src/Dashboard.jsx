@@ -109,7 +109,7 @@ export default function Dashboard() {
                 <div className="w-12 h-12 bg-blue-500 rounded-2xl flex items-center justify-center text-white"><FileText size={24} /></div>
                 <h4 className="font-bold">Naissance</h4>
               </button>
-              <button onClick={() => setShowDeclareForm(true)} className="flex flex-col items-center gap-4 p-6 bg-white border border-gray-100 rounded-[1.5rem] hover:shadow-lg transition text-center group">
+              <button onClick={handleViewMariage} className="flex flex-col items-center gap-4 p-6 bg-white border border-gray-100 rounded-[1.5rem] hover:shadow-lg transition text-center group">
                 <div className="w-12 h-12 bg-pink-500 rounded-2xl flex items-center justify-center text-white"><Heart size={24} /></div>
                 <h4 className="font-bold">Mariage</h4>
               </button>
