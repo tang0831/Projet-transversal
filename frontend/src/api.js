@@ -20,6 +20,7 @@ export const getActeDeces = (cin, requester_cin) => api.get(`/actes/deces/${cin}
 export const getListeActesDecesAccessibles = (cin) => api.get(`/actes/deces/liste-accessibles/${cin}`);
 export const declarerDeces = (data, requester_cin) => api.post(`/actes/deces/declarer-par-proche?requester_cin=${requester_cin}`, data);
 export const declarerMariage = (data) => api.post('/actes/mariage/declarer', data);
+export const declarerNaissance = (data) => api.post('/actes/naissance/declarer', data);
 export const validerMariageConjoint = (id_acte, cin, action) => 
   api.post('/actes/mariage/valider', null, { params: { id_acte, cin_conjoint: cin, action } });
 export const getActesAValider = () => api.get('/admin/actes/a-valider');
