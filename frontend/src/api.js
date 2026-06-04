@@ -12,6 +12,7 @@ export const getCitoyen = (cin) => api.get(`/citoyens/${cin}`);
 export const getProches = (cin) => api.get(`/citoyens/${cin}/proches`);
 export const getActeNaissance = (cin) => api.get(`/actes/naissance/${cin}`);
 export const getActeMariage = (cin) => api.get(`/actes/mariage/${cin}`);
+export const getPendingMarriageRequests = (cin) => api.get(`/actes/mariage/pending/${cin}`);
 export const getActeDeces = (cin, requester_cin) => api.get(`/actes/deces/${cin}/${requester_cin}`);
 export const getListeActesDecesAccessibles = (cin) => api.get(`/actes/deces/liste-accessibles/${cin}`);
 export const declarerDeces = (data, requester_cin) => api.post(`/actes/deces/declarer-par-proche?requester_cin=${requester_cin}`, data);
@@ -21,5 +22,8 @@ export const validerMariageConjoint = (id_acte, cin, action) =>
 export const getActesAValider = () => api.get('/admin/actes/a-valider');
 export const validerActeOfficiel = (id_acte) => api.post(`/admin/actes/${id_acte}/valider-officiel`);
 export const rechercherCitoyen = (prefixe) => api.get(`/citoyens/recherche/${prefixe}`);
+
+export const getMessages = (id_localite) => api.get(`/forum/messages?id_localite=${id_localite}`);
+export const postMessage = (data) => api.post('/forum/messages', data);
 
 export default api;

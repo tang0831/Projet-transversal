@@ -1,4 +1,4 @@
-from app.controllers import acte_controller, auth_controller, citoyen_controller
+from app.controllers import acte_controller, auth_controller, citoyen_controller, forum_controller
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -16,6 +16,7 @@ app.add_middleware(
 app.include_router(citoyen_controller.router, prefix="/api")
 app.include_router(auth_controller.router, prefix="/api")
 app.include_router(acte_controller.router, prefix="/api")
+app.include_router(forum_controller.router, prefix="/api")
 
 
 @app.get("/")

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   User, FileText, Settings, LogOut, Shield, MapPin, Briefcase, Calendar, ExternalLink,
-  X, Printer, Download, Heart, Send, Clock, Check, Ban, Skull, Search, PlusCircle
+  X, Printer, Download, Heart, Send, Clock, Check, Ban, Skull, Search, PlusCircle, MessageSquare
 } from 'lucide-react';
 import { getCitoyen, getActeNaissance, getActeMariage, getActeDeces, getProches, getListeActesDecesAccessibles, declarerMariage, declarerDeces, getPendingMarriageRequests, validerMariageConjoint } from './api';
 
@@ -193,6 +193,7 @@ export default function Dashboard() {
         </div>
         <nav className="flex-1 px-4 space-y-2">
             <button onClick={() => navigate("/dashboard")} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold bg-vert/10 text-vert"><User size={18} /> Mon Profil</button>
+            <button onClick={() => navigate("/forum")} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-gray-500 hover:bg-gray-50"><MessageSquare size={18} /> Forum</button>
         </nav>
         <div className="p-4 border-t border-gray-100">
           <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-rouge hover:bg-red-50 transition"><LogOut size={18} /> Déconnexion</button>

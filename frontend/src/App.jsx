@@ -5,6 +5,7 @@ import Login from './Login';
 import Register from './Register';
 import ProfileCompletion from './ProfileCompletion';
 import Dashboard from './Dashboard';
+import Forum from './Forum';
 import AdminDashboard from './AdminDashboard';
 import Header from './Header';
 import Footer from './Footer';
@@ -22,6 +23,7 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/complete-profile" element={<ProfileCompletion />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/forum" element={<Forum />} />
             <Route path="/admin" element={<AdminDashboard />} />
           </Routes>
         </main>
