@@ -116,6 +116,7 @@ export default function Dashboard() {
 
   const handleSubmitDeclaration = async (e) => {
     e.preventDefault();
+    console.log("Envoi demande mariage:", declarationData);
     try {
       await declarerMariage({
         ...declarationData,
@@ -125,7 +126,8 @@ export default function Dashboard() {
       setShowDeclareForm(false);
       checkMarriage(user.numero_cin);
     } catch (error) {
-      alert("Erreur.");
+      console.error("Erreur déclaration mariage:", error.response?.data);
+      alert("Erreur: " + (error.response?.data?.detail || "Impossible d'envoyer la demande"));
     }
   };
 
