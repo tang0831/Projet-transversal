@@ -352,6 +352,23 @@ def valider_mariage(id_acte: int, cin_conjoint: str, action: str):
         cursor.close()
         conn.close()
 
+@router.get("/admin/actes/a-valider")
+def get_actes_a_valider():
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        query = """
+            SELECT a.id, a.type_acte, a.date_enregistrement, c.nom, c.prenom, c.numero_cin
+            FROM acte a
+            JOIN citoyen c ON a.id_citoyen = c.id
+            WHERE a.statut = 'EN_ATTENTE_OFFICIER'
+        """
+        cursor.execute(query)
+        return cursor.fetchall()
+    finally:
+        cursor.close()
+        conn.close()
+
 @router.get("/actes/naissance/{cin}/pdf")
 def generate_birth_act_pdf(cin: str):
     data = get_acte_naissance(cin)
