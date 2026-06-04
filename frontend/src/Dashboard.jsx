@@ -391,6 +391,24 @@ export default function Dashboard() {
                 </div>
                 <div className="space-y-4 text-left">
                   <div className="bg-white/50 p-4 rounded-2xl border border-gray-100">
+                    <h4 className="text-xs font-black text-vert uppercase">Parents de l'Époux</h4>
+                    <p className="text-sm font-bold">
+                      Père: {selectedMariage.epoux_parents.pere ? `${selectedMariage.epoux_parents.pere.nom} ${selectedMariage.epoux_parents.pere.prenom}` : "Non renseigné"}
+                    </p>
+                    <p className="text-sm font-bold">
+                      Mère: {selectedMariage.epoux_parents.mere ? `${selectedMariage.epoux_parents.mere.nom} ${selectedMariage.epoux_parents.mere.prenom}` : "Non renseignée"}
+                    </p>
+                  </div>
+                  <div className="bg-white/50 p-4 rounded-2xl border border-gray-100">
+                    <h4 className="text-xs font-black text-vert uppercase">Parents de l'Épouse</h4>
+                    <p className="text-sm font-bold">
+                      Père: {selectedMariage.epouse_parents.pere ? `${selectedMariage.epouse_parents.pere.nom} ${selectedMariage.epouse_parents.pere.prenom}` : "Non renseigné"}
+                    </p>
+                    <p className="text-sm font-bold">
+                      Mère: {selectedMariage.epouse_parents.mere ? `${selectedMariage.epouse_parents.mere.nom} ${selectedMariage.epouse_parents.mere.prenom}` : "Non renseignée"}
+                    </p>
+                  </div>
+                  <div className="bg-white/50 p-4 rounded-2xl border border-gray-100">
                     <h4 className="text-xs font-black text-vert uppercase">Régime Matrimonial</h4>
                     <p className="text-sm font-bold">{selectedMariage.regime}</p>
                   </div>
