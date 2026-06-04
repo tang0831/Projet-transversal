@@ -13,6 +13,7 @@ export const getProches = (cin) => api.get(`/citoyens/${cin}/proches`);
 export const getActeNaissance = (cin) => api.get(`/actes/naissance/${cin}`);
 export const getActeMariage = (cin) => api.get(`/actes/mariage/${cin}`);
 export const getActeDeces = (cin, requester_cin) => api.get(`/actes/deces/${cin}/${requester_cin}`);
+export const getListeActesDecesAccessibles = (cin) => api.get(`/actes/deces/liste-accessibles/${cin}`);
 export const declarerDeces = (data, requester_cin) => api.post(`/actes/deces/declarer-par-proche?requester_cin=${requester_cin}`, data);
 export const declarerMariage = (data) => api.post('/actes/mariage/declarer', data);
 export const validerMariageConjoint = (id_acte, cin, action) => 
