@@ -16,6 +16,7 @@ export default function Dashboard() {
   const [selectedActe, setSelectedActe] = useState(null);
   const [selectedMariage, setSelectedMariage] = useState(null);
   const [selectedDeces, setSelectedDeces] = useState(null);
+  const [selectedDecesCin, setSelectedDecesCin] = useState(null); // Nouveau état pour le CIN
   const [showModal, setShowModal] = useState(false);
   const [showMariageModal, setShowMariageModal] = useState(false);
   const [showDecesModal, setShowDecesModal] = useState(false);
@@ -130,6 +131,7 @@ export default function Dashboard() {
     try {
       const response = await getActeDeces(cin, user.numero_cin);
       setSelectedDeces(response.data);
+      setSelectedDecesCin(cin); // Stockage du CIN
       setShowSearchDecesModal(false);
       setShowDecesModal(true);
     } catch (error) {
@@ -184,6 +186,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex relative">
+      {/* Sidebar */}
       <aside className="w-64 bg-white border-r border-gray-100 flex flex-col">
         <div className="p-8">
           <div className="text-2xl font-black text-vert tracking-tighter">TOKANA-ID</div>
@@ -196,6 +199,7 @@ export default function Dashboard() {
         </div>
       </aside>
 
+      {/* Main Content */}
       <main className="flex-1 p-12 overflow-y-auto">
         <div className="max-w-4xl mx-auto">
           <header className="mb-12"><h1 className="text-3xl font-black text-gray-900">Manao ahoana, {profile?.prenom || user?.username} !</h1></header>
@@ -260,22 +264,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Modal Déclaration Décès */}
-      {showDeclareDecesModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-gray-900/60 backdrop-blur-sm">
-          <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden p-8">
-            <h3 className="text-2xl font-black mb-6">Déclarer un décès</h3>
-            <form onSubmit={handleSubmitDeclarationDeces} className="space-y-4">
-              <input className="w-full px-5 py-4 bg-gray-50 rounded-2xl" type="date" value={decesData.date_deces} onChange={(e) => setDecesData({...decesData, date_deces: e.target.value})} required />
-              <input className="w-full px-5 py-4 bg-gray-50 rounded-2xl" placeholder="Lieu" value={decesData.lieu_deces} onChange={(e) => setDecesData({...decesData, lieu_deces: e.target.value})} required />
-              <input className="w-full px-5 py-4 bg-gray-50 rounded-2xl" placeholder="Cause" value={decesData.cause_deces} onChange={(e) => setDecesData({...decesData, cause_deces: e.target.value})} />
-              <button type="submit" className="w-full py-4 bg-red-600 text-white font-bold rounded-2xl">Déclarer</button>
-              <button type="button" onClick={() => setShowDeclareDecesModal(false)} className="w-full py-4 bg-gray-100 text-gray-700 font-bold rounded-2xl">Annuler</button>
-            </form>
-          </div>
-        </div>
-      )}
-
       {/* Modal Décès (Premium) */}
       {showDecesModal && selectedDeces && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-gray-900/60 backdrop-blur-sm">
@@ -284,7 +272,7 @@ export default function Dashboard() {
               <h3 className="font-black text-gray-900 tracking-tight uppercase">Acte de Décès N°{selectedDeces.numero_acte}</h3>
               <div className="flex gap-2">
                 <a 
-                  href={`http://localhost:8000/api/actes/deces/${selectedDeces.numero_cin}/pdf`}
+                  href={`http://localhost:8000/api/actes/deces/${selectedDecesCin}/pdf`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="p-2 bg-gray-900 text-white rounded-xl hover:bg-black transition"
@@ -314,7 +302,6 @@ export default function Dashboard() {
         </div>
       )}
       
-      {/* ... (Modal Naissance, Mariage, DeclarationMariage, PendingMariage) */}
       {/* Modal Naissance (Premium) */}
       {showModal && selectedActe && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-gray-900/60 backdrop-blur-sm">
