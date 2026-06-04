@@ -364,6 +364,32 @@ export default function Dashboard() {
                 }
                 required
               />
+              <input
+                className="w-full px-5 py-4 bg-gray-50 rounded-2xl"
+                placeholder="Lieu du mariage"
+                value={declarationData.lieu_mariage}
+                onChange={(e) =>
+                  setDeclarationData({
+                    ...declarationData,
+                    lieu_mariage: e.target.value,
+                  })
+                }
+                required
+              />
+              <select
+                className="w-full px-5 py-4 bg-gray-50 rounded-2xl"
+                value={declarationData.regime}
+                onChange={(e) =>
+                  setDeclarationData({
+                    ...declarationData,
+                    regime: e.target.value,
+                  })
+                }
+              >
+                <option value="Communauté de biens réduite aux acquêts">Communauté de biens réduite aux acquêts</option>
+                <option value="Séparation de biens">Séparation de biens</option>
+                <option value="Communauté universelle">Communauté universelle</option>
+              </select>
               <button
                 type="submit"
                 className="w-full py-4 bg-pink-600 text-white font-bold rounded-2xl hover:bg-pink-700 transition"

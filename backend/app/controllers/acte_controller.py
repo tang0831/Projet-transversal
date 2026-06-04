@@ -87,6 +87,42 @@ class DeathDeclarationSchema(BaseModel):
     lieu_deces: str
     cause_deces: Optional[str] = None
 
+class MarriageDeclarationSchema(BaseModel):
+    numero_cin_demandeur: str
+    numero_cin_conjoint: str
+    date_mariage: str
+    lieu_mariage: str
+    regime: str
+
+@router.post("/actes/mariage/declarer")
+def declarer_mariage(data: MarriageDeclarationSchema):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("SELECT id FROM citoyen WHERE numero_cin = %s", (data.numero_cin_demandeur,))
+        demandeur = cursor.fetchone()
+        cursor.execute("SELECT id FROM citoyen WHERE numero_cin = %s", (data.numero_cin_conjoint,))
+        conjoint = cursor.fetchone()
+        
+        if not demandeur or not conjoint:
+            raise HTTPException(status_code=404, detail="Citoyen non trouvé")
+            
+        cursor.execute(
+            "INSERT INTO acte (id_citoyen, type_acte, statut) VALUES (%s, 'MARIAGE', 'EN_ATTENTE_CONJOINT')",
+            (demandeur['id'],)
+        )
+        id_acte = cursor.lastrowid
+        
+        cursor.execute(
+            "INSERT INTO mariage (id_acte, id_epoux, id_epouse, date_mariage, lieu_mariage, regime_matrimonial) VALUES (%s, %s, %s, %s, %s, %s)",
+            (id_acte, demandeur['id'], conjoint['id'], data.date_mariage, data.lieu_mariage, data.regime)
+        )
+        conn.commit()
+        return {"message": "Demande de mariage déclarée avec succès", "id_acte": id_acte}
+    finally:
+        cursor.close()
+        conn.close()
+
 @router.get("/actes/naissance/{cin}", response_model=BirthActResponse)
 def get_acte_naissance(cin: str):
     conn = get_db_connection()
@@ -386,6 +422,11 @@ def generate_birth_act_pdf(cin: str):
 @router.get("/actes/mariage/{cin}/pdf")
 def generate_marriage_act_pdf(cin: str):
     data = get_acte_mariage(cin)
+    
+    # Vérification du statut avant génération
+    if data['statut'] != 'OFFICIEL':
+        raise HTTPException(status_code=403, detail="L'acte de mariage n'est pas encore validé officiellement.")
+
     seal_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../frontend/public/Seal_of_Madagascar.svg.png"))
     buffer = io.BytesIO()
     p = canvas.Canvas(buffer, pagesize=A4)
@@ -425,8 +466,13 @@ def generate_marriage_act_pdf(cin: str):
     y -= 0.6*cm
     p.drawString(2.5*cm, y, f"Profession : {data['epoux']['profession']}")
     y -= 0.6*cm
-    if data['epoux_parents']['pere']:
-        p.drawString(2.5*cm, y, f"Fils de : {data['epoux_parents']['pere']['nom']} et de {data['epoux_parents']['mere']['nom'] if data['epoux_parents']['mere'] else 'Inconnu'}")
+    
+    pere_epoux = data['epoux_parents'].get('pere')
+    mere_epoux = data['epoux_parents'].get('mere')
+    if pere_epoux or mere_epoux:
+        pere_nom = pere_epoux.get('nom', 'Inconnu') if pere_epoux else 'Inconnu'
+        mere_nom = mere_epoux.get('nom', 'Inconnue') if mere_epoux else 'Inconnue'
+        p.drawString(2.5*cm, y, f"Fils de : {pere_nom} et de {mere_nom}")
     y -= 1.5*cm
 
     p.setFont("Helvetica-Bold", 12)
@@ -441,8 +487,13 @@ def generate_marriage_act_pdf(cin: str):
     y -= 0.6*cm
     p.drawString(2.5*cm, y, f"Profession : {data['epouse']['profession']}")
     y -= 0.6*cm
-    if data['epouse_parents']['pere']:
-        p.drawString(2.5*cm, y, f"Fille de : {data['epouse_parents']['pere']['nom']} et de {data['epouse_parents']['mere']['nom'] if data['epouse_parents']['mere'] else 'Inconnue'}")
+    
+    pere_epouse = data['epouse_parents'].get('pere')
+    mere_epouse = data['epouse_parents'].get('mere')
+    if pere_epouse or mere_epouse:
+        pere_nom = pere_epouse.get('nom', 'Inconnu') if pere_epouse else 'Inconnu'
+        mere_nom = mere_epouse.get('nom', 'Inconnue') if mere_epouse else 'Inconnue'
+        p.drawString(2.5*cm, y, f"Fille de : {pere_nom} et de {mere_nom}")
     y -= 2*cm
     
     p.setFont("Helvetica-Bold", 11)
