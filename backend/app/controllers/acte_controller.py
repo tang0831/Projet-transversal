@@ -87,12 +87,40 @@ class DeathDeclarationSchema(BaseModel):
     lieu_deces: str
     cause_deces: Optional[str] = None
 
+class BirthDeclarationSchema(BaseModel):
+    numero_cin: str
+    nom: str
+    prenom: str
+    date_naissance: str
+    heure_naissance: Optional[str] = "08:00"
+    lieu_naissance: str
+    sexe: str
+
 class MarriageDeclarationSchema(BaseModel):
     numero_cin_demandeur: str
     numero_cin_conjoint: str
     date_mariage: str
     lieu_mariage: str
     regime: str
+
+@router.post("/actes/naissance/declarer")
+def declarer_naissance(data: BirthDeclarationSchema):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("INSERT INTO citoyen (numero_cin, nom, prenom, date_naissance, lieu_naissance, sexe) VALUES (%s, %s, %s, %s, %s, %s)",
+                       (data.numero_cin, data.nom, data.prenom, data.date_naissance, data.lieu_naissance, data.sexe))
+        id_citoyen = cursor.lastrowid
+        
+        cursor.execute(
+            "INSERT INTO acte (id_citoyen, type_acte, statut) VALUES (%s, 'NAISSANCE', 'OFFICIEL')",
+            (id_citoyen,)
+        )
+        conn.commit()
+        return {"message": "Naissance déclarée et acte généré automatiquement"}
+    finally:
+        cursor.close()
+        conn.close()
 
 @router.post("/actes/mariage/declarer")
 def declarer_mariage(data: MarriageDeclarationSchema):
@@ -431,7 +459,7 @@ def generate_birth_act_pdf(cin: str):
     p.setFont("Helvetica-Bold", 18)
     p.drawCentredString(width/2, height - 6.5*cm, "COPIE D'ACTE DE NAISSANCE")
     p.setFont("Helvetica-Bold", 10)
-    p.drawCentredString(width/2, height - 7.2*cm, f"EXTRAIT DU REGISTRE N° {data['numero_acte']}")
+    p.drawCentredString(width/2, height - 7.2*cm, f"EXTRAIT DU REGISTRE N° {data.get('numero_acte', 'N/A')}")
     
     p.setFont("Helvetica", 11)
     y = height - 9*cm
@@ -443,13 +471,13 @@ def generate_birth_act_pdf(cin: str):
     y -= 0.8*cm
     
     p.setFont("Helvetica", 11)
-    p.drawString(2.5*cm, y, f"Nom & Prénoms : {data['nom']} {data['prenom']}")
+    p.drawString(2.5*cm, y, f"Nom & Prénoms : {data.get('nom', '')} {data.get('prenom', '')}")
     y -= 0.6*cm
-    p.drawString(2.5*cm, y, f"Né(e) le : {data['date_naissance']} à {data['heure_naissance']}")
+    p.drawString(2.5*cm, y, f"Né(e) le : {data.get('date_naissance', 'Non renseigné')} à {data.get('heure_naissance', '08:00')}")
     y -= 0.6*cm
-    p.drawString(2.5*cm, y, f"Lieu : {data['lieu_naissance']}")
+    p.drawString(2.5*cm, y, f"Lieu : {data.get('lieu_naissance', 'Non renseigné')}")
     y -= 0.6*cm
-    p.drawString(2.5*cm, y, f"Sexe : {data['sexe']}")
+    p.drawString(2.5*cm, y, f"Sexe : {data.get('sexe', 'Non renseigné')}")
     y -= 1.5*cm
     
     p.setFont("Helvetica-Bold", 12)
@@ -461,14 +489,15 @@ def generate_birth_act_pdf(cin: str):
     p.setFont("Helvetica-Bold", 11)
     p.drawString(2.5*cm, y, "Père :")
     p.setFont("Helvetica", 11)
-    if data['pere']:
-        p.drawString(5*cm, y, f"{data['pere']['nom']} {data['pere']['prenom']}")
+    pere = data.get('pere')
+    if pere:
+        p.drawString(5*cm, y, f"{pere.get('nom', '')} {pere.get('prenom', '')}")
         y -= 0.6*cm
-        p.drawString(5*cm, y, f"Né le {data['pere']['date_naissance']} à {data['pere']['lieu_naissance']}")
+        p.drawString(5*cm, y, f"Né le {pere.get('date_naissance', 'N/A')} à {pere.get('lieu_naissance', 'N/A')}")
         y -= 0.6*cm
-        p.drawString(5*cm, y, f"Profession : {data['pere']['profession']}")
+        p.drawString(5*cm, y, f"Profession : {pere.get('profession', 'N/A')}")
         y -= 0.6*cm
-        p.drawString(5*cm, y, f"Domicile : {data['pere']['domicile']}")
+        p.drawString(5*cm, y, f"Domicile : {pere.get('domicile', 'N/A')}")
     else:
         p.drawString(5*cm, y, "Non renseigné")
     y -= 1*cm
@@ -476,14 +505,15 @@ def generate_birth_act_pdf(cin: str):
     p.setFont("Helvetica-Bold", 11)
     p.drawString(2.5*cm, y, "Mère :")
     p.setFont("Helvetica", 11)
-    if data['mere']:
-        p.drawString(5*cm, y, f"{data['mere']['nom']} {data['mere']['prenom']}")
+    mere = data.get('mere')
+    if mere:
+        p.drawString(5*cm, y, f"{mere.get('nom', '')} {mere.get('prenom', '')}")
         y -= 0.6*cm
-        p.drawString(5*cm, y, f"Née le {data['mere']['date_naissance']} à {data['mere']['lieu_naissance']}")
+        p.drawString(5*cm, y, f"Née le {mere.get('date_naissance', 'N/A')} à {mere.get('lieu_naissance', 'N/A')}")
         y -= 0.6*cm
-        p.drawString(5*cm, y, f"Profession : {data['mere']['profession']}")
+        p.drawString(5*cm, y, f"Profession : {mere.get('profession', 'N/A')}")
         y -= 0.6*cm
-        p.drawString(5*cm, y, f"Domicile : {data['mere']['domicile']}")
+        p.drawString(5*cm, y, f"Domicile : {mere.get('domicile', 'N/A')}")
     else:
         p.drawString(5*cm, y, "Non renseigné")
     y -= 2*cm
@@ -495,9 +525,9 @@ def generate_birth_act_pdf(cin: str):
     y -= 0.8*cm
     
     p.setFont("Helvetica", 10)
-    p.drawString(2.5*cm, y, f"Date de déclaration : {data['date_declaration']}")
+    p.drawString(2.5*cm, y, f"Date de déclaration : {data.get('date_declaration', 'N/A')}")
     y -= 0.6*cm
-    p.drawString(2.5*cm, y, f"Officier d'État Civil : {data['officier_etat_civil']}")
+    p.drawString(2.5*cm, y, f"Officier d'État Civil : {data.get('officier_etat_civil', 'RAKOTOMALALA Jean Pierre')}")
     
     p.setStrokeColor(colors.black)
     p.rect(width - 7*cm, 2*cm, 5*cm, 3*cm)
