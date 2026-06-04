@@ -376,7 +376,17 @@ export default function Dashboard() {
                 >
                   <Download size={20} />
                 </a>
+                <div className="flex gap-2">
+                <a 
+                  href={`http://localhost:8000/api/actes/mariage/${user?.numero_cin}/pdf`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-2 bg-vert text-white rounded-xl hover:bg-green-700 transition"
+                >
+                  <Download size={20} />
+                </a>
                 <button onClick={() => setShowMariageModal(false)} className="p-2 hover:bg-white rounded-xl text-gray-400 hover:text-rouge transition"><X size={20} /></button>
+              </div>
               </div>
             </div>
             <div className="flex-1 overflow-y-auto p-12 bg-[#FCFCFA]">
