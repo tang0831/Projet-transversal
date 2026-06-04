@@ -86,17 +86,25 @@ def get_proches(cin: str):
             raise HTTPException(status_code=404, detail="Citoyen non trouvé")
             
         query = """
-            SELECT DISTINCT c.nom, c.prenom, c.numero_cin
+            SELECT DISTINCT c.nom, c.prenom, c.numero_cin, 'Père/Mère' as type_lien
             FROM citoyen c
             WHERE c.id IN (
                 SELECT id_parent FROM Lien_Parente WHERE id_enfant = %s
                 UNION
                 SELECT id_enfant FROM Lien_Parente WHERE id_parent = %s
-                UNION
+            )
+            UNION
+            SELECT DISTINCT c.nom, c.prenom, c.numero_cin, 'Conjoint' as type_lien
+            FROM citoyen c
+            WHERE c.id IN (
                 SELECT id_epoux FROM mariage WHERE id_epouse = %s
                 UNION
                 SELECT id_epouse FROM mariage WHERE id_epoux = %s
-                UNION
+            )
+            UNION
+            SELECT DISTINCT c.nom, c.prenom, c.numero_cin, 'Frère/Sœur' as type_lien
+            FROM citoyen c
+            WHERE c.id IN (
                 SELECT id_enfant FROM Lien_Parente 
                 WHERE id_parent IN (SELECT id_parent FROM Lien_Parente WHERE id_enfant = %s)
             )

@@ -4,7 +4,7 @@ import {
   User, FileText, Settings, LogOut, Shield, MapPin, Briefcase, Calendar, ExternalLink,
   X, Printer, Download, Heart, Send, Clock, Check, Ban, Skull, Search, PlusCircle
 } from 'lucide-react';
-import { getCitoyen, getActeNaissance, getActeMariage, getActeDeces, getProches, getListeActesDecesAccessibles, declarerMariage, getPendingMarriageRequests, validerMariageConjoint } from './api';
+import { getCitoyen, getActeNaissance, getActeMariage, getActeDeces, getProches, getListeActesDecesAccessibles, declarerMariage, declarerDeces, getPendingMarriageRequests, validerMariageConjoint } from './api';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -23,6 +23,7 @@ export default function Dashboard() {
 
   // État décès / Mariage
   const [showSearchDecesModal, setShowSearchDecesModal] = useState(false);
+  const [showDeclareDecesModal, setShowDeclareDecesModal] = useState(false);
   const [showDeclareForm, setShowDeclareForm] = useState(false);
   const [actesDecesDisponibles, setActesDecesDisponibles] = useState([]);
   const [proches, setProches] = useState([]);
@@ -31,6 +32,12 @@ export default function Dashboard() {
     date_mariage: "",
     lieu_mariage: "",
     regime: "Communauté de biens réduite aux acquêts",
+  });
+  const [decesData, setDecesData] = useState({
+    numero_cin: "",
+    date_deces: "",
+    lieu_deces: "",
+    cause_deces: "",
   });
 
   useEffect(() => {
@@ -130,6 +137,24 @@ export default function Dashboard() {
     }
   };
 
+  const startDeclarationDeces = (proche) => {
+    setDecesData({...decesData, numero_cin: proche.numero_cin});
+    setShowSearchDecesModal(false);
+    setShowDeclareDecesModal(true);
+  };
+
+  const handleSubmitDeclarationDeces = async (e) => {
+    e.preventDefault();
+    try {
+      await declarerDeces(decesData, user.numero_cin);
+      alert("Déclaration de décès soumise.");
+      setShowDeclareDecesModal(false);
+      setDecesData({ numero_cin: '', date_deces: '', lieu_deces: '', cause_deces: '' });
+    } catch (error) {
+      alert("Erreur: " + (error.response?.data?.detail || "Impossible d'envoyer la demande"));
+    }
+  };
+
   const handleSubmitDeclaration = async (e) => {
     e.preventDefault();
     try {
@@ -220,7 +245,33 @@ export default function Dashboard() {
                     <span>{acte.nom} {acte.prenom}</span><ExternalLink size={16} />
                   </button>
                 ))}
+                <h4 className="px-4 mt-6 text-xs font-black text-gray-400 uppercase">Déclarer un décès</h4>
+                {proches.map(p => (
+                  <button key={p.numero_cin} onClick={() => startDeclarationDeces(p)} className="w-full p-4 flex justify-between items-center bg-pink-50 rounded-xl hover:bg-pink-100 text-pink-700">
+                    <div>
+                        <p className="font-bold">{p.nom} {p.prenom}</p>
+                        <p className="text-[10px] uppercase font-black opacity-75">{p.type_lien}</p>
+                    </div>
+                    <PlusCircle size={16} />
+                  </button>
+                ))}
              </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Déclaration Décès */}
+      {showDeclareDecesModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-gray-900/60 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden p-8">
+            <h3 className="text-2xl font-black mb-6">Déclarer un décès</h3>
+            <form onSubmit={handleSubmitDeclarationDeces} className="space-y-4">
+              <input className="w-full px-5 py-4 bg-gray-50 rounded-2xl" type="date" value={decesData.date_deces} onChange={(e) => setDecesData({...decesData, date_deces: e.target.value})} required />
+              <input className="w-full px-5 py-4 bg-gray-50 rounded-2xl" placeholder="Lieu" value={decesData.lieu_deces} onChange={(e) => setDecesData({...decesData, lieu_deces: e.target.value})} required />
+              <input className="w-full px-5 py-4 bg-gray-50 rounded-2xl" placeholder="Cause" value={decesData.cause_deces} onChange={(e) => setDecesData({...decesData, cause_deces: e.target.value})} />
+              <button type="submit" className="w-full py-4 bg-red-600 text-white font-bold rounded-2xl">Déclarer</button>
+              <button type="button" onClick={() => setShowDeclareDecesModal(false)} className="w-full py-4 bg-gray-100 text-gray-700 font-bold rounded-2xl">Annuler</button>
+            </form>
           </div>
         </div>
       )}
@@ -262,8 +313,9 @@ export default function Dashboard() {
           </div>
         </div>
       )}
-
-      {/* Modal Acte Naissance (Premium) */}
+      
+      {/* ... (Modal Naissance, Mariage, DeclarationMariage, PendingMariage) */}
+      {/* Modal Naissance (Premium) */}
       {showModal && selectedActe && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-gray-900/60 backdrop-blur-sm">
           <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -309,7 +361,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Modal Mariage */}
+      {/* Modal Déclaration Mariage */}
       {showDeclareForm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-gray-900/60 backdrop-blur-sm">
           <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden p-8">
