@@ -9,6 +9,9 @@ export const register = (nom_utilisateur, mot_de_passe, role, id_localite, numer
   api.post('/register', null, { params: { nom_utilisateur, mot_de_passe, role, id_localite, numero_cin } });
 export const creerCitoyen = (data) => api.post('/citoyens/', data);
 export const getCitoyen = (cin) => api.get(`/citoyens/${cin}`);
+export const getAllCitoyens = () => api.get('/citoyens/');
+export const updateCitoyen = (cin, data) => api.put(`/citoyens/${cin}`, data);
+export const deleteCitoyen = (cin) => api.delete(`/citoyens/${cin}`);
 export const getProches = (cin) => api.get(`/citoyens/${cin}/proches`);
 export const getActeNaissance = (cin) => api.get(`/actes/naissance/${cin}`);
 export const getActeMariage = (cin) => api.get(`/actes/mariage/${cin}`);

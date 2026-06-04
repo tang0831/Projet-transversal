@@ -75,6 +75,44 @@ def get_citoyen(cin: str):
         raise HTTPException(status_code=404, detail="Citoyen non trouvé")
     return citoyen
 
+@router.get("/citoyens/")
+def get_all_citoyens():
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM citoyen")
+    citoyens = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return citoyens
+
+@router.put("/citoyens/{cin}")
+def update_citoyen(cin: str, citoyen: CitoyenSchema):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        query = """
+            UPDATE citoyen SET nom=%s, prenom=%s, date_naissance=%s, lieu_naissance=%s, sexe=%s, profession=%s, domicile=%s, id_localite=%s
+            WHERE numero_cin=%s
+        """
+        cursor.execute(query, (citoyen.nom, citoyen.prenom, citoyen.date_naissance, citoyen.lieu_naissance, citoyen.sexe, citoyen.profession, citoyen.domicile, citoyen.id_localite, cin))
+        conn.commit()
+        return {"message": "Citoyen mis à jour"}
+    finally:
+        cursor.close()
+        conn.close()
+
+@router.delete("/citoyens/{cin}")
+def delete_citoyen(cin: str):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM citoyen WHERE numero_cin = %s", (cin,))
+        conn.commit()
+        return {"message": "Citoyen supprimé"}
+    finally:
+        cursor.close()
+        conn.close()
+
 @router.get("/citoyens/{cin}/proches")
 def get_proches(cin: str):
     conn = get_db_connection()
