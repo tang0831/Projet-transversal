@@ -146,6 +146,32 @@ def get_pending_marriage_requests(cin: str):
         cursor.close()
         conn.close()
 
+@router.post("/actes/deces/declarer-par-proche")
+def declarer_deces(data: DeathDeclarationSchema, requester_cin: str):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT id FROM citoyen WHERE numero_cin = %s", (data.numero_cin,))
+        deceased = cursor.fetchone()
+        if not deceased:
+            raise HTTPException(status_code=404, detail="Citoyen non trouvé")
+            
+        cursor.execute(
+            "INSERT INTO acte (id_citoyen, type_acte, statut) VALUES (%s, 'DECES', 'EN_ATTENTE_OFFICIER')",
+            (deceased[0],)
+        )
+        id_acte = cursor.lastrowid
+        
+        cursor.execute(
+            "INSERT INTO deces (id_acte, id_citoyen, date_deces, lieu_deces, cause_deces) VALUES (%s, %s, %s, %s, %s)",
+            (id_acte, deceased[0], data.date_deces, data.lieu_deces, data.cause_deces)
+        )
+        conn.commit()
+        return {"message": "Déclaration de décès enregistrée"}
+    finally:
+        cursor.close()
+        conn.close()
+
 @router.get("/actes/naissance/{cin}", response_model=BirthActResponse)
 def get_acte_naissance(cin: str):
     conn = get_db_connection()
@@ -305,6 +331,7 @@ def get_acte_deces(cin: str, requester_cin: str):
             "numero_acte": deces['numero_acte'],
             "nom": deces['nom'],
             "prenom": deces['prenom'],
+            "numero_cin": cin,
             "date_deces": str(deces['date_deces']),
             "lieu_deces": deces['lieu_deces'],
             "cause_deces": deces['cause_deces']
@@ -337,7 +364,7 @@ def verify_access(cursor, requester_cin, deceased_cin):
     
     return False
 
-@router.post("/actes/mariage/valider")
+@router.post("/actes/mariage/valider_status")
 def valider_mariage(id_acte: int, cin_conjoint: str, action: str):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -381,7 +408,7 @@ def valider_acte_officiel(id_acte: int):
         cursor.close()
         conn.close()
 
-@router.post("/actes/mariage/valider")
+@router.post("/actes/mariage/valider_status")
 def generate_birth_act_pdf(cin: str):
     data = get_acte_naissance(cin)
     seal_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../frontend/public/Seal_of_Madagascar.svg.png"))
