@@ -266,13 +266,13 @@ export default function Dashboard() {
                 Acte de Naissance N°{selectedActe.numero_acte}
               </h3>
               <div className="flex gap-2">
-                <a
-                  href={`http://localhost:8000/api/actes/naissance/${user?.numero_cin}/pdf`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-2 bg-vert text-white rounded-xl hover:bg-green-700 transition"
+                <a 
+                href={`http://localhost:8000/api/actes/naissance/${user?.numero_cin}/pdf`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 bg-gray-900 text-white rounded-xl hover:bg-black transition"
                 >
-                  <Download size={20} />
+                <Download size={20} />
                 </a>
                 <button
                   onClick={() => setShowModal(false)}
@@ -372,7 +372,7 @@ export default function Dashboard() {
                   href={`http://localhost:8000/api/actes/mariage/${user?.numero_cin}/pdf`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-2 bg-vert text-white rounded-xl hover:bg-green-700 transition"
+                  className="p-2 bg-gray-900 text-white rounded-xl hover:bg-black transition"
                 >
                   <Download size={20} />
                 </a>
@@ -381,7 +381,7 @@ export default function Dashboard() {
                   href={`http://localhost:8000/api/actes/mariage/${user?.numero_cin}/pdf`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-2 bg-vert text-white rounded-xl hover:bg-green-700 transition"
+                  className="p-2 bg-gray-900 text-white rounded-xl hover:bg-black transition"
                 >
                   <Download size={20} />
                 </a>
