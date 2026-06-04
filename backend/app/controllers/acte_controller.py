@@ -618,8 +618,8 @@ def generate_marriage_act_pdf(cin: str):
     )
 
 @router.get("/actes/deces/{cin}/pdf")
-def generate_death_act_pdf(cin: str):
-    data = get_acte_deces(cin, cin) # Requester is the user himself in this context
+def generate_death_act_pdf(cin: str, requester_cin: str):
+    data = get_acte_deces(cin, requester_cin) # Utiliser le vrai demandeur
     buffer = io.BytesIO()
     p = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4

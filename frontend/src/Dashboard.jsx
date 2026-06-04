@@ -272,7 +272,7 @@ export default function Dashboard() {
               <h3 className="font-black text-gray-900 tracking-tight uppercase">Acte de Décès N°{selectedDeces.numero_acte}</h3>
               <div className="flex gap-2">
                 <a 
-                  href={`http://localhost:8000/api/actes/deces/${selectedDecesCin}/pdf`}
+                  href={`http://localhost:8000/api/actes/deces/${selectedDecesCin}/pdf?requester_cin=${user?.numero_cin}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="p-2 bg-gray-900 text-white rounded-xl hover:bg-black transition"
