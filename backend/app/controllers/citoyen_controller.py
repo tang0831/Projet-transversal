@@ -96,9 +96,13 @@ def get_proches(cin: str):
                 SELECT id_epoux FROM mariage WHERE id_epouse = %s
                 UNION
                 SELECT id_epouse FROM mariage WHERE id_epoux = %s
+                UNION
+                SELECT id_enfant FROM Lien_Parente 
+                WHERE id_parent IN (SELECT id_parent FROM Lien_Parente WHERE id_enfant = %s)
             )
+            AND c.id != %s
         """
-        cursor.execute(query, (citoyen['id'], citoyen['id'], citoyen['id'], citoyen['id']))
+        cursor.execute(query, (citoyen['id'], citoyen['id'], citoyen['id'], citoyen['id'], citoyen['id'], citoyen['id']))
         return cursor.fetchall()
     finally:
         cursor.close()
