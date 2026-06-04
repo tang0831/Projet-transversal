@@ -75,6 +75,35 @@ def get_citoyen(cin: str):
         raise HTTPException(status_code=404, detail="Citoyen non trouvé")
     return citoyen
 
+@router.get("/citoyens/{cin}/proches")
+def get_proches(cin: str):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("SELECT id FROM citoyen WHERE numero_cin = %s", (cin,))
+        citoyen = cursor.fetchone()
+        if not citoyen:
+            raise HTTPException(status_code=404, detail="Citoyen non trouvé")
+            
+        query = """
+            SELECT DISTINCT c.nom, c.prenom, c.numero_cin
+            FROM citoyen c
+            WHERE c.id IN (
+                SELECT id_parent FROM Lien_Parente WHERE id_enfant = %s
+                UNION
+                SELECT id_enfant FROM Lien_Parente WHERE id_parent = %s
+                UNION
+                SELECT id_epoux FROM mariage WHERE id_epouse = %s
+                UNION
+                SELECT id_epouse FROM mariage WHERE id_epoux = %s
+            )
+        """
+        cursor.execute(query, (citoyen['id'], citoyen['id'], citoyen['id'], citoyen['id']))
+        return cursor.fetchall()
+    finally:
+        cursor.close()
+        conn.close()
+
 @router.get("/citoyens/recherche/{prefixe}")
 def recherche_nom(prefixe: str):
     trie = charger_trie()
