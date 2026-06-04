@@ -111,14 +111,27 @@ def delete_citoyen(cin: str):
         if not citoyen:
             raise HTTPException(status_code=404, detail="Citoyen non trouvé")
         
-        # Supprimer les dépendances (actes)
+        # 1. Supprimer les entrées dans la table mariage liées à ce citoyen (id_epoux ou id_epouse)
+        # Note: ceci nécessite de trouver les id_acte associés à ces mariages pour supprimer dans acte ensuite
+        query_mariages = "SELECT id_acte FROM mariage WHERE id_epoux = %s OR id_epouse = %s"
+        cursor.execute(query_mariages, (citoyen['id'], citoyen['id']))
+        mariages = cursor.fetchall()
+        
+        for m in mariages:
+            cursor.execute("DELETE FROM mariage WHERE id_acte = %s", (m['id_acte'],))
+            cursor.execute("DELETE FROM acte WHERE id = %s", (m['id_acte'],))
+
+        # 2. Supprimer les autres actes (naissance, deces)
         cursor.execute("DELETE FROM acte WHERE id_citoyen = %s", (citoyen['id'],))
         
-        # Supprimer le citoyen
+        # 3. Supprimer le citoyen
         cursor.execute("DELETE FROM citoyen WHERE id = %s", (citoyen['id'],))
         
         conn.commit()
-        return {"message": "Citoyen et ses actes supprimés"}
+        return {"message": "Citoyen et tous ses liens supprimés"}
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         cursor.close()
         conn.close()
