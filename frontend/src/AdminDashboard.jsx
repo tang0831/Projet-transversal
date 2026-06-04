@@ -44,13 +44,36 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      <aside className="w-64 bg-gray-900 text-white flex flex-col p-8">
-        <div className="text-2xl font-black text-vert mb-10">TOKANA-ID</div>
-        <nav className="flex-1 space-y-2">
-          <button onClick={() => setActiveTab('VALIDATIONS')} className={`w-full p-4 rounded-xl font-bold ${activeTab === 'VALIDATIONS' ? 'bg-white/10' : ''}`}>Validations</button>
-          <button onClick={() => setActiveTab('CITOYENS')} className={`w-full p-4 rounded-xl font-bold ${activeTab === 'CITOYENS' ? 'bg-white/10' : ''}`}>Citoyens</button>
+      {/* Sidebar Admin */}
+      <aside className="w-64 bg-white border-r border-gray-100 flex flex-col">
+        <div className="p-8">
+          <div className="text-2xl font-black text-vert tracking-tighter">TOKANA-ID</div>
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Administration</p>
+        </div>
+
+        <nav className="flex-1 px-4 space-y-2">
+          <button 
+            onClick={() => setActiveTab('VALIDATIONS')} 
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition ${activeTab === 'VALIDATIONS' ? 'bg-vert/10 text-vert' : 'text-gray-500 hover:bg-gray-50'}`}
+          >
+            <ShieldCheck size={18} /> Validations
+          </button>
+          <button 
+            onClick={() => setActiveTab('CITOYENS')} 
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition ${activeTab === 'CITOYENS' ? 'bg-vert/10 text-vert' : 'text-gray-500 hover:bg-gray-50'}`}
+          >
+            <Users size={18} /> Citoyens
+          </button>
         </nav>
-        <button onClick={() => {localStorage.removeItem('user'); navigate('/login');}} className="p-4 text-red-400 font-bold">Déconnexion</button>
+
+        <div className="p-4 border-t border-gray-100">
+          <button 
+            onClick={() => {localStorage.removeItem('user'); navigate('/login');}} 
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-rouge hover:bg-red-50 transition"
+          >
+            <LogOut size={18} /> Déconnexion
+          </button>
+        </div>
       </aside>
 
       <main className="flex-1 p-12 overflow-y-auto">
@@ -63,7 +86,7 @@ export default function AdminDashboard() {
                   <tr key={a.id} className="border-b">
                     <td className="p-4">{a.nom} {a.prenom}</td>
                     <td className="p-4">{a.type_acte}</td>
-                    <td className="p-4"><button onClick={() => handleValidate(a.id)} className="text-green-600"><CheckCircle2 /></button></td>
+                    <td className="p-4 text-right"><button onClick={() => handleValidate(a.id)} className="text-green-600"><CheckCircle2 /></button></td>
                   </tr>
                 ))}
               </tbody>
@@ -80,7 +103,7 @@ export default function AdminDashboard() {
                   <tr key={c.numero_cin} className="border-b">
                     <td className="p-4">{c.nom} {c.prenom}</td>
                     <td className="p-4">{c.numero_cin}</td>
-                    <td className="p-4">
+                    <td className="p-4 text-right">
                       <button onClick={() => handleDelete(c.numero_cin)} className="text-red-600"><Trash2 /></button>
                     </td>
                   </tr>
